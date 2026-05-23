@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block title %}OnlineBazar — Home{% endblock %}
+{% block content %}
+<div class="container-fluid px-0">
+
+  <!-- Hero Banner -->
+  {% if not query and not selected_category %}
+  <div id="heroBanner" class="carousel slide" data-bs-ride="carousel">
+    <div class="carousel-inner">
+      <div class="carousel-item active">
+        <div class="hero-slide bg-primary text-white d-flex align-items-center justify-content-center" style="height:320px;">
+          <div class="text-center">
+            <h1 class="display-4 fw-bold">🛒 Welcome to OnlineBazar</h1>
+            <p class="lead">Discover thousands of products at unbeatable prices</p>
+            <a href="#products" class="btn btn-warning btn-lg fw-bold">Shop Now</a>
+          </div>
+        </div>
+      </div>
+      <div class="carousel-item">
+        <div class="hero-slide text-white d-flex align-items-center justify-content-center" style="height:320px;background:linear-gradient(135deg,#1a1a2e,#16213e);">
+          <div class="text-center">
+            <h2 class="display-5 fw-bold">🤖 AI-Powered Recommendations</h2>
+            <p class="lead">Products suggested just for you using Machine Learning</p>
+            <a href="/user/register/" class="btn btn-warning btn-lg fw-bold">Get Started</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#heroBanner" data-bs-slide="prev"><span class="carousel-control-prev-icon"></span></button>
+    <button class="carousel-control-next" type="button" data-bs-target="#heroBanner" data-bs-slide="next"><span class="carousel-control-next-icon"></span></button>
+  </div>
+  {% endif %}
+
+  <div class="container mt-4">
+
+    <!-- Category Pills -->
+    <div class="d-flex flex-wrap gap-2 mb-4">
+      <a href="/" class="btn btn-sm {% if not selected_category %}btn-primary{% else %}btn-outline-primary{% endif %}">All</a>
+      {% for cat_val, cat_label in all_categories %}
+      <a href="/?category={{ cat_val }}" class="btn btn-sm {% if selected_category == cat_val %}btn-primary{% else %}btn-outline-primary{% endif %}">{{ cat_label }}</a>
+      {% endfor %}
+    </div>
+
+    <!-- ML Recommendations -->
+    {% if recommended %}
+    <div class="mb-5">
+      <h4 class="fw-bold mb-3"><i class="fas fa-magic text-warning me-2"></i>Recommended For You</h4>
+      <div class="d-flex gap-3 overflow-auto pb-2">
+        {% for p in recommended %}
+        <div class="card shadow-sm flex-shrink-0" style="width:200px;">
+          <a href="/product/{{ p.product_id }}/">
+            {% if p.product_image %}
+            <img src="{{ p.product_image.url }}" class="card-img-top" style="height:140px;object-fit:cover;" alt="{{ p.product_name }}"/>
+            {% else %}
+            <div class="bg-light d-flex align-items-center justify-content-center" style="height:140px;"><i class="fas fa-box fa-2x text-muted"></i></div>
+            {% endif %}
+          </a>
+          <div class="card-body p-2">
+            <p class="card-title fw-semibold small mb-1 text-truncate">{{ p.product_name }}</p>
+            <p class="text-primary fw-bold mb-1">₹{{ p.price }}</p>
+            <a href="/cart/add/{{ p.product_id }}/" class="btn btn-primary btn-sm w-100">Add to Cart</a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Search Results / Products -->
+    <div id="products">
+      <h4 class="fw-bold mb-3">
+        {% if query %}<i class="fas fa-search me-2"></i>Results for "{{ query }}"
+        {% elif selected_category %}{{ selected_category }} Products
+        {% else %}<i class="fas fa-fire text-danger me-2"></i>All Products{% endif %}
+      </h4>
+
+      {% if products %}
+      <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+        {% for p in products %}
+        <div class="col">
+          <div class="card h-100 shadow-sm product-card">
+            <a href="/product/{{ p.product_id }}/">
+              {% if p.product_image %}
+              <img src="{{ p.product_image.url }}" class="card-img-top" style="height:180px;object-fit:cover;" alt="{{ p.product_name }}"/>
+              {% else %}
+              <div class="bg-light d-flex align-items-center justify-content-center" style="height:180px;"><i class="fas fa-box fa-3x text-muted"></i></div>
+              {% endif %}
+            </a>
+            <div class="card-body p-2">
+              <span class="badge bg-secondary small">{{ p.category }}</span>
+              <h6 class="card-title mt-1 mb-1 fw-semibold text-truncate">{{ p.product_name }}</h6>
+              <!-- Rating stars -->
+              <div class="text-warning small mb-1">
+                {% for i in "12345" %}{% if forloop.counter <= p.average_rating %}★{% else %}☆{% endif %}{% endfor %}
+                <span class="text-muted">({{ p.review_count }})</span>
+              </div>
+              <div class="d-flex align-items-center justify-content-between">
+                <span class="text-primary fw-bold fs-6">₹{{ p.price }}</span>
+                {% with sb=p.stock_badge %}
+                <span class="badge bg-{{ sb.2 }} small">{{ sb.1 }}</span>
+                {% endwith %}
+              </div>
+            </div>
+            <div class="card-footer p-2 bg-white border-0">
+              <div class="d-flex gap-1">
+                {% if p.stock_quantity > 0 %}
+                <a href="/cart/add/{{ p.product_id }}/" class="btn btn-primary btn-sm flex-grow-1"><i class="fas fa-cart-plus"></i> Cart</a>
+                {% else %}
+                <button class="btn btn-secondary btn-sm flex-grow-1" disabled>Out of Stock</button>
+                {% endif %}
+                <a href="/wishlist/add/{{ p.product_id }}/" class="btn btn-outline-danger btn-sm"><i class="fas fa-heart"></i></a>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center py-5">
+        <i class="fas fa-search fa-4x text-muted mb-3"></i>
+        <h5 class="text-muted">No products found.</h5>
+        <a href="/" class="btn btn-primary mt-2">Browse All Products</a>
+      </div>
+      {% endif %}
+
+      <!-- PAGINATION -->
+      {% if paginator.num_pages > 1 %}
+      <div class="d-flex justify-content-center align-items-center mt-4 mb-2">
+        <nav>
+          <ul class="pagination pagination-md shadow-sm mb-0">
+
+            <!-- Previous -->
+            <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+              <a class="page-link fw-bold"
+                 href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% else %}#{% endif %}">
+                <i class="fas fa-chevron-left"></i>
+              </a>
+            </li>
+
+            <!-- Page numbers -->
+            {% for num in paginator.page_range %}
+              {% if page_obj.number == num %}
+              <li class="page-item active">
+                <span class="page-link fw-bold" style="background:#2874F0;border-color:#2874F0;">{{ num }}</span>
+              </li>
+              {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}">{{ num }}</a>
+              </li>
+              {% endif %}
+            {% endfor %}
+
+            <!-- Next -->
+            <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+              <a class="page-link fw-bold"
+                 href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% else %}#{% endif %}">
+                <i class="fas fa-chevron-right"></i>
+              </a>
+            </li>
+
+          </ul>
+        </nav>
+      </div>
+      <p class="text-center text-muted small mt-1">
+        Page {{ page_obj.number }} of {{ paginator.num_pages }} &nbsp;&mdash;&nbsp; {{ paginator.count }} products total
+      </p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

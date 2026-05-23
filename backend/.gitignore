@@ -1,0 +1,77 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Django
+*.log
+*.pot
+*.pyc
+*.pyo
+*.db
+*.sqlite3
+media/
+*.sqlite3-journal
+/staticfiles/
+
+# Flask
+instance/
+.webassets-cache
+
+# Pytest
+.cache
+.pytest_cache/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# IDEs and editors
+*.swp
+*~
+*.tmp
+*.bak
+*.orig
+
+# Mac
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Environment variables
+.env
+
+# Sensitive files
+*.pem
+*.key
+
+# Generated files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

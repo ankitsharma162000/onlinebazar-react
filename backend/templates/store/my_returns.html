@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% block title %}My Returns — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0"><i class="fas fa-undo text-primary me-2"></i>My Return Requests</h4>
+    <a href="/user/orders/" class="btn btn-outline-secondary btn-sm">← My Orders</a>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">
+    {{ msg }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  {% if returns %}
+  {% for r in returns %}
+  <div class="card shadow-sm mb-4 border-0" style="border-radius:12px;overflow:hidden;">
+
+    <!-- Card Header -->
+    <div class="card-header d-flex justify-content-between align-items-center py-3"
+         style="background:{% if r.status == 'pending' %}#fff8e1{% elif r.status == 'approved' or r.status == 'refunded' %}#e8f5e9{% elif r.status == 'rejected' %}#ffebee{% else %}#e3f2fd{% endif %};">
+      <div>
+        <strong>Return #{{ r.id|stringformat:"s"|slice:":8"|upper }}</strong>
+        <span class="text-muted small ms-2">{{ r.created_at|date:"d M Y, g:i A" }}</span>
+      </div>
+      <span class="badge fs-6 px-3 py-2
+        {% if r.status == 'pending' %}bg-warning text-dark
+        {% elif r.status == 'approved' %}bg-success
+        {% elif r.status == 'rejected' %}bg-danger
+        {% elif r.status == 'picked_up' %}bg-primary
+        {% elif r.status == 'refunded' %}bg-success
+        {% endif %}">
+        {% if r.status == 'pending' %}⏳ Pending Review
+        {% elif r.status == 'approved' %}✅ Approved
+        {% elif r.status == 'rejected' %}❌ Rejected
+        {% elif r.status == 'picked_up' %}📦 Item Picked Up
+        {% elif r.status == 'refunded' %}💰 Refund Processed
+        {% endif %}
+      </span>
+    </div>
+
+    <div class="card-body p-4">
+      <div class="row g-3">
+
+        <!-- Product -->
+        <div class="col-md-4">
+          <div class="d-flex gap-3 align-items-center">
+            {% if r.order_item.product.product_image %}
+            <img src="{{ r.order_item.product.product_image.url }}"
+                 style="width:65px;height:65px;object-fit:cover;border-radius:8px;" alt="">
+            {% else %}
+            <div class="bg-light d-flex align-items-center justify-content-center"
+                 style="width:65px;height:65px;border-radius:8px;">
+              <i class="fas fa-box text-muted"></i>
+            </div>
+            {% endif %}
+            <div>
+              <div class="fw-semibold small">{{ r.order_item.product.product_name|truncatechars:35 }}</div>
+              <div class="text-muted small">Order #{{ r.order.order_id|stringformat:"s"|slice:":8"|upper }}</div>
+              <div class="mt-1">
+                <span class="badge bg-light text-dark border small">{{ r.get_return_type_display }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reason & Description -->
+        <div class="col-md-4">
+          <div class="small fw-semibold text-muted text-uppercase mb-1">Reason</div>
+          <div class="fw-semibold">{{ r.get_reason_display }}</div>
+          <div class="text-muted small mt-1">{{ r.description|truncatechars:80 }}</div>
+          {% if r.product_image %}
+          <a href="{{ r.product_image.url }}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">
+            <i class="fas fa-image me-1"></i>View Photo
+          </a>
+          {% endif %}
+        </div>
+
+        <!-- Status & Action -->
+        <div class="col-md-4 text-md-end">
+          <div class="fw-bold text-primary fs-5">₹{{ r.refund_amount }}</div>
+          <div class="text-muted small">Refund Amount</div>
+
+          {% if r.admin_note %}
+          <div class="alert alert-light border mt-2 p-2 text-start">
+            <small class="fw-bold">Admin Note:</small>
+            <div class="small text-muted">{{ r.admin_note }}</div>
+          </div>
+          {% endif %}
+
+          {% if r.status == 'refunded' %}
+          <div class="badge bg-success px-3 py-2 mt-2">
+            💰 Refund Processed!
+          </div>
+          {% elif r.status == 'pending' %}
+          <div class="mt-2">
+            <div class="text-muted small mb-1">⏳ Under review (24-48 hrs)</div>
+            <a href="/returns/cancel/{{ r.id }}/"
+               onclick="return confirm('Cancel this return request?')"
+               class="btn btn-outline-danger btn-sm">
+              <i class="fas fa-times me-1"></i>Cancel Request
+            </a>
+          </div>
+          {% elif r.status == 'approved' %}
+          <div class="mt-2 text-success small fw-semibold">
+            ✅ Approved! Pickup will be arranged.
+          </div>
+          {% elif r.status == 'rejected' %}
+          <div class="mt-2 text-danger small">
+            ❌ Request rejected. Contact support for help.
+          </div>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="card-footer bg-white pt-0 border-0 pb-3 px-4">
+      <div class="d-flex justify-content-between mb-1">
+        {% for step, label in steps %}
+        <div class="text-center flex-fill">
+          <div class="rounded-circle d-inline-flex align-items-center justify-content-center fw-bold"
+               style="width:28px;height:28px;font-size:12px;
+               background:{% if r.status == step or steps|slice:':'|first == step %}#2874F0{% else %}#dee2e6{% endif %};
+               color:white;">
+            {{ forloop.counter }}
+          </div>
+          <div class="small text-muted mt-1" style="font-size:10px;">{{ label }}</div>
+        </div>
+        {% if not forloop.last %}
+        <div class="flex-fill d-flex align-items-center" style="margin-bottom:20px;">
+          <hr class="w-100 m-0">
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+  {% endfor %}
+
+  {% else %}
+  <div class="text-center py-5">
+    <i class="fas fa-undo fa-4x text-muted mb-3"></i>
+    <h5 class="text-muted">No return requests yet</h5>
+    <p class="text-muted">You can raise a return from your <a href="/user/orders/">My Orders</a> page<br>within 7 days of delivery.</p>
+    <a href="/" class="btn btn-primary mt-2">Continue Shopping</a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% block title %}Return Request — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+
+      <!-- Header -->
+      <div class="d-flex align-items-center gap-3 mb-4">
+        <a href="/user/orders/" class="btn btn-outline-secondary btn-sm">← Back</a>
+        <h4 class="fw-bold mb-0"><i class="fas fa-undo text-primary me-2"></i>Request Return / Refund</h4>
+      </div>
+
+      <!-- Return Window Alert -->
+      {% if days_since <= 2 %}
+      <div class="alert alert-success border-0 shadow-sm mb-4">
+        ✅ <strong>{{ 7|add:"-"|add:days_since|stringformat:"s" }} days left</strong> in return window. You can raise a return request.
+      </div>
+      {% elif days_since <= 5 %}
+      <div class="alert alert-warning border-0 shadow-sm mb-4">
+        ⚠️ <strong>{{ days_since }} days</strong> since delivery. Only <strong>{{ 7|add:days_since|stringformat:"s" }}</strong> days left in return window!
+      </div>
+      {% else %}
+      <div class="alert alert-warning border-0 shadow-sm mb-4">
+        ⚠️ <strong>{{ days_since }} days</strong> since delivery. Return window closes in <strong>{{ 7 }} days</strong> from delivery.
+      </div>
+      {% endif %}
+
+      <!-- Product Info Card -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white fw-bold">
+          <i class="fas fa-box me-2"></i>Product Details
+        </div>
+        <div class="card-body d-flex gap-3 align-items-center">
+          {% if order_item.product.product_image %}
+          <img src="{{ order_item.product.product_image.url }}"
+               style="width:80px;height:80px;object-fit:cover;border-radius:8px;" alt="">
+          {% else %}
+          <div class="bg-light d-flex align-items-center justify-content-center"
+               style="width:80px;height:80px;border-radius:8px;">
+            <i class="fas fa-box fa-2x text-muted"></i>
+          </div>
+          {% endif %}
+          <div>
+            <h6 class="fw-bold mb-1">{{ order_item.product.product_name }}</h6>
+            <p class="text-muted small mb-1">Order #{{ order.order_id|stringformat:"s"|slice:":8"|upper }}</p>
+            <p class="text-muted small mb-1">Ordered on: {{ order.order_date|date:"d M Y" }}</p>
+            <div class="d-flex gap-2">
+              <span class="badge bg-light text-dark border">Qty: {{ order_item.quantity }}</span>
+              <span class="fw-bold text-primary">₹{{ order_item.price_at_purchase }}</span>
+              <span class="badge bg-success">{{ order.order_status }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Return Form -->
+      <div class="card shadow-sm">
+        <div class="card-header bg-warning text-dark fw-bold">
+          <i class="fas fa-undo me-2"></i>Return Details
+        </div>
+        <div class="card-body p-4">
+
+          {% for msg in messages %}
+          <div class="alert alert-{{ msg.tags }} py-2">{{ msg }}</div>
+          {% endfor %}
+
+          <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <!-- Return Type -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Return Type <span class="text-danger">*</span></label>
+              <div class="row g-2">
+                {% for val, label in types %}
+                <div class="col-md-4">
+                  <div class="card border-2 p-3 text-center return-type-card"
+                       style="cursor:pointer;" onclick="selectType('{{ val }}', this)">
+                    <input type="radio" name="return_type" value="{{ val }}" class="d-none"
+                           {% if val == 'return' %}checked{% endif %}>
+                    <div style="font-size:24px;">
+                      {% if val == 'return' %}🔄{% elif val == 'exchange' %}🔃{% else %}💰{% endif %}
+                    </div>
+                    <div class="fw-semibold small mt-1">{{ label }}</div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Reason -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Reason for Return <span class="text-danger">*</span></label>
+              <select name="reason" class="form-select" required>
+                <option value="">-- Select a reason --</option>
+                {% for val, label in reasons %}
+                <option value="{{ val }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Description -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Describe the Issue <span class="text-danger">*</span></label>
+              <textarea name="description" class="form-control" rows="4" required
+                        placeholder="Please describe the problem in detail. Include any relevant information like when the issue occurred, what you expected vs what you received..."></textarea>
+              <small class="text-muted">Minimum 20 characters</small>
+            </div>
+
+            <!-- Image Upload -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Upload Product Photo <span class="text-muted">(Optional but recommended)</span></label>
+              <input type="file" name="product_image" class="form-control" accept="image/*">
+              <small class="text-muted">Upload a clear photo showing the issue. This helps us process your request faster.</small>
+            </div>
+
+            <!-- Refund Info -->
+            <div class="alert alert-info border-0 mb-4">
+              <i class="fas fa-info-circle me-2"></i>
+              <strong>Refund Amount: ₹{{ order_item.price_at_purchase }}</strong><br>
+              <small>Refund will be processed to your original payment method within 5-7 business days after approval.</small>
+            </div>
+
+            <!-- Policy -->
+            <div class="card bg-light border-0 p-3 mb-4">
+              <h6 class="fw-bold mb-2">📋 Return Policy</h6>
+              <ul class="small text-muted mb-0">
+                <li>Returns accepted within <strong>7 days</strong> of delivery</li>
+                <li>Item must be in original condition with packaging</li>
+                <li>Refund processed within <strong>5-7 business days</strong> after approval</li>
+                <li>Our team will review your request within <strong>24-48 hours</strong></li>
+              </ul>
+            </div>
+
+            <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold">
+              <i class="fas fa-paper-plane me-2"></i>Submit Return Request
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// Select return type
+document.querySelectorAll('.return-type-card')[0].classList.add('border-primary', 'bg-primary', 'bg-opacity-10');
+
+function selectType(val, el) {
+  document.querySelectorAll('.return-type-card').forEach(c => {
+    c.classList.remove('border-primary','bg-primary','bg-opacity-10');
+  });
+  el.classList.add('border-primary','bg-primary','bg-opacity-10');
+  el.querySelector('input').checked = true;
+}
+</script>
+{% endblock %}

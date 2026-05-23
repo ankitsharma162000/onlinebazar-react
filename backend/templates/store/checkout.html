@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% block title %}Checkout — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h3 class="fw-bold mb-4"><i class="fas fa-lock text-primary me-2"></i>Secure Checkout</h3>
+
+  {% if is_member %}
+  <div class="alert border-0 shadow-sm mb-3 d-flex align-items-center gap-3"
+       style="background:linear-gradient(135deg,#fff8e1,#fffde7);border-left:4px solid #FB641B !important;">
+    <span style="font-size:32px;">⭐</span>
+    <div>
+      <strong class="text-warning">Bazar Prime Member Benefits Applied!</strong><br>
+      <small class="text-muted">🚚 FREE Delivery &nbsp;|&nbsp; ❌ No Platform Fee &nbsp;|&nbsp; 🏷️ Exclusive Discounts</small>
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-light border shadow-sm mb-3 d-flex align-items-center justify-content-between">
+    <div>
+      <strong>💡 Join Bazar Prime</strong> — Get FREE delivery + No platform fee on all orders!
+      <br><small class="text-muted">Starting at just ₹199/month or ₹999/year</small>
+    </div>
+    <a href="/user/membership/" class="btn btn-warning fw-bold btn-sm">Join Now ⭐</a>
+  </div>
+  {% endif %}
+
+  <div class="row g-4">
+    <!-- Left: Address + Payment -->
+    <div class="col-lg-7">
+      <!-- Delivery Address -->
+      <div class="card shadow mb-3">
+        <div class="card-header bg-primary text-white fw-bold">
+          <i class="fas fa-map-marker-alt me-2"></i>Delivery Address
+        </div>
+        <div class="card-body">
+          <p class="mb-0 fw-semibold">{{ user.name }}</p>
+          <p class="text-muted mb-0">{{ user.get_full_address }}</p>
+          <p class="text-muted mb-0">📞 {{ user.phone_number }}</p>
+          <a href="/user/profile/edit/" class="btn btn-sm btn-outline-primary mt-2">Change Address</a>
+        </div>
+      </div>
+
+      <!-- Payment -->
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white fw-bold">
+          <i class="fas fa-credit-card me-2"></i>Payment Method
+        </div>
+        <div class="card-body">
+          <form method="POST" id="checkoutForm">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-6">
+                <div class="card border-2 payment-opt p-3 text-center" onclick="selectPayment('COD',this)">
+                  <input type="radio" name="payment_method" value="COD" class="d-none" checked/>
+                  <i class="fas fa-money-bill-wave fa-2x text-success mb-2"></i>
+                  <p class="mb-0 fw-semibold">Cash on Delivery</p>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="card border-2 payment-opt p-3 text-center" onclick="selectPayment('UPI',this)">
+                  <input type="radio" name="payment_method" value="UPI" class="d-none"/>
+                  <i class="fas fa-qrcode fa-2x text-primary mb-2"></i>
+                  <p class="mb-0 fw-semibold">UPI</p>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="card border-2 payment-opt p-3 text-center" onclick="selectPayment('Card',this)">
+                  <input type="radio" name="payment_method" value="Card" class="d-none"/>
+                  <i class="fas fa-credit-card fa-2x text-warning mb-2"></i>
+                  <p class="mb-0 fw-semibold">ATM / Debit Card</p>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="card border-2 payment-opt p-3 text-center" onclick="selectPayment('NetBanking',this)">
+                  <input type="radio" name="payment_method" value="NetBanking" class="d-none"/>
+                  <i class="fas fa-university fa-2x text-info mb-2"></i>
+                  <p class="mb-0 fw-semibold">Net Banking</p>
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold mt-4">
+              <i class="fas fa-check-circle me-2"></i>Place Order — ₹{{ total }}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Order Summary -->
+    <div class="col-lg-5">
+      <div class="card shadow">
+        <div class="card-header bg-dark text-white fw-bold">
+          Order Summary ({{ items|length }} items)
+        </div>
+        <div class="card-body p-2">
+          {% for item in items %}
+          <div class="d-flex align-items-center gap-2 border-bottom py-2">
+            {% if item.product.product_image %}
+            <img src="{{ item.product.product_image.url }}" style="width:50px;height:50px;object-fit:cover;" class="rounded"/>
+            {% else %}
+            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width:50px;height:50px;">
+              <i class="fas fa-box text-muted"></i>
+            </div>
+            {% endif %}
+            <div class="flex-grow-1">
+              <p class="mb-0 small fw-semibold text-truncate">{{ item.product.product_name }}</p>
+              <p class="mb-0 small text-muted">Qty: {{ item.quantity }} × ₹{{ item.product.price }}</p>
+            </div>
+            <strong class="text-primary">₹{{ item.product.price }}</strong>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="card-footer">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-muted">Subtotal</span>
+            <strong>₹{{ subtotal }}</strong>
+          </div>
+          {% if disc_amount > 0 %}
+          <div class="d-flex justify-content-between mb-1 text-success">
+            <span>🏷️ Discount</span>
+            <strong>−₹{{ disc_amount }}</strong>
+          </div>
+          {% endif %}
+          <!-- Delivery charge -->
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-muted">🚚 Delivery</span>
+            {% if is_member %}
+            <span class="text-success fw-semibold">FREE ⭐</span>
+            {% elif delivery_charge == 0 %}
+            <span class="text-success fw-semibold">FREE (above ₹500)</span>
+            {% else %}
+            <strong class="text-danger">₹{{ delivery_charge }}</strong>
+            {% endif %}
+          </div>
+          <!-- Platform fee -->
+          <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted">🏢 Platform Fee</span>
+            {% if is_member %}
+            <span class="text-success fw-semibold">₹0 ⭐</span>
+            {% else %}
+            <strong class="text-danger">₹{{ platform_fee }}</strong>
+            {% endif %}
+          </div>
+          <hr class="my-1">
+          <div class="d-flex justify-content-between fw-bold fs-5">
+            <span>Total</span>
+            <span class="text-primary">₹{{ total }}</span>
+          </div>
+          {% if not is_member %}
+          <div class="text-center mt-2">
+            <small class="text-muted">Save on delivery & platform fees with
+              <a href="/user/membership/" class="text-warning fw-bold">Bazar Prime ⭐</a>
+            </small>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function selectPayment(val, el) {
+  document.querySelectorAll('.payment-opt').forEach(e => e.classList.remove('border-primary','bg-primary','bg-opacity-10'));
+  el.classList.add('border-primary','bg-primary','bg-opacity-10');
+  el.querySelector('input[type=radio]').checked = true;
+}
+document.querySelector('.payment-opt').classList.add('border-primary','bg-primary','bg-opacity-10');
+</script>
+{% endblock %}

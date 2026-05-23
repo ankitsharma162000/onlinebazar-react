@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Manage Sellers — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold"><i class="fas fa-store text-success me-2"></i>Manage Sellers</h4>
+    <a href="/superadmin/dashboard/" class="btn btn-outline-secondary">← Dashboard</a>
+  </div>
+  <form method="GET" class="mb-3">
+    <div class="input-group" style="max-width:400px;">
+      <input type="text" name="q" class="form-control" placeholder="Search by name or email..." value="{{ q }}"/>
+      <button class="btn btn-success" type="submit"><i class="fas fa-search"></i></button>
+    </div>
+  </form>
+  <div class="card shadow">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-success">
+          <tr><th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>State</th><th>Products</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for s in sellers %}
+          <tr class="{% if s.is_blacklisted %}table-danger{% endif %}">
+            <td>{{ forloop.counter }}</td>
+            <td><strong>{{ s.name }}</strong><br/><small class="text-muted">{{ s.created_at|date:"d M Y" }}</small></td>
+            <td>{{ s.email }}</td>
+            <td>{{ s.phone_number }}</td>
+            <td>{{ s.state }}</td>
+            <td><span class="badge bg-info">{{ s.products.count }}</span></td>
+            <td>
+              {% if s.is_blacklisted %}
+              <span class="badge bg-danger">Suspended</span>
+              {% if s.blacklist_reason %}<br/><small class="text-danger">{{ s.blacklist_reason|truncatechars:30 }}</small>{% endif %}
+              {% else %}
+              <span class="badge bg-success">Active</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if s.is_blacklisted %}
+              <form method="POST" action="/superadmin/sellers/whitelist/{{ s.seller_id }}/">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-success fw-bold">
+                  <i class="fas fa-check-circle me-1"></i>Activate
+                </button>
+              </form>
+              {% else %}
+              <button class="btn btn-sm btn-outline-danger fw-bold" data-bs-toggle="modal" data-bs-target="#blacklistModal{{ forloop.counter }}">
+                <i class="fas fa-ban me-1"></i>Suspend Account
+              </button>
+              <!-- Suspend Modal -->
+              <div class="modal fade" id="blacklistModal{{ forloop.counter }}" tabindex="-1">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                      <h5 class="modal-title"><i class="fas fa-ban me-2"></i>Suspend: {{ s.name }}</h5>
+                      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST" action="/superadmin/sellers/blacklist/{{ s.seller_id }}/">
+                      {% csrf_token %}
+                      <div class="modal-body">
+                        <p class="text-muted small mb-2">This seller will be blocked from logging in. Provide a reason so you remember later.</p>
+                        <label class="form-label fw-semibold">Reason for Suspension <span class="text-danger">*</span></label>
+                        <textarea name="reason" class="form-control" rows="3" placeholder="Enter reason..." required></textarea>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger fw-bold"><i class="fas fa-ban me-1"></i>Confirm Suspend</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="text-center py-4 text-muted">No sellers found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <p class="text-muted mt-2 small">Total: {{ sellers|length }} seller(s)</p>
+</div>
+{% endblock %}

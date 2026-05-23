@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+{% block title %}SuperAdmin Dashboard — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container-fluid mt-3 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-0"><i class="fas fa-crown text-warning me-2"></i>SuperAdmin Dashboard</h4>
+      <small class="text-muted">E-Commerce Control Panel — MCA Project</small>
+    </div>
+    <a href="/superadmin/logout/" class="btn btn-outline-danger">Logout</a>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-2">
+      <div class="card kpi-card shadow-sm border-0 bg-primary text-white text-center p-3">
+        <i class="fas fa-users fa-2x mb-1"></i>
+        <h3 class="fw-bold mb-0">{{ total_users }}</h3>
+        <small>Users</small>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card kpi-card shadow-sm border-0 bg-success text-white text-center p-3">
+        <i class="fas fa-store fa-2x mb-1"></i>
+        <h3 class="fw-bold mb-0">{{ total_sellers }}</h3>
+        <small>Sellers</small>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card kpi-card shadow-sm border-0 bg-info text-white text-center p-3">
+        <i class="fas fa-box fa-2x mb-1"></i>
+        <h3 class="fw-bold mb-0">{{ total_products }}</h3>
+        <small>Products</small>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card kpi-card shadow-sm border-0 bg-warning text-dark text-center p-3">
+        <i class="fas fa-shopping-bag fa-2x mb-1"></i>
+        <h3 class="fw-bold mb-0">{{ total_orders }}</h3>
+        <small>Orders</small>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card kpi-card shadow-sm border-0 bg-dark text-white text-center p-3">
+        <i class="fas fa-rupee-sign fa-2x mb-1"></i>
+        <h3 class="fw-bold mb-0">₹{{ total_revenue|floatformat:0 }}</h3>
+        <small>Revenue</small>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card kpi-card shadow-sm border-0 bg-danger text-white text-center p-3">
+        <i class="fas fa-ban fa-2x mb-1"></i>
+        <h3 class="fw-bold mb-0">{{ blacklisted }}</h3>
+        <small>Blacklisted</small>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <a href="/user/membership/" class="text-decoration-none">
+        <div class="card kpi-card shadow-sm border-0 text-white text-center p-3" style="background:#FB641B;">
+          <i class="fas fa-star fa-2x mb-1"></i>
+          <h3 class="fw-bold mb-0">{{ total_members }}</h3>
+          <small>Prime Members</small>
+        </div>
+      </a>
+    </div>
+    <div class="col-6 col-md-2">
+      <a href="/seller/order-requests/" class="text-decoration-none">
+        <div class="card kpi-card shadow-sm border-0 text-white text-center p-3" style="background:#6f42c1;">
+          <i class="fas fa-inbox fa-2x mb-1"></i>
+          <h3 class="fw-bold mb-0">{{ pending_seller_requests }}</h3>
+          <small>Pending Requests</small>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Quick Nav -->
+  <div class="d-flex gap-2 flex-wrap mb-4">
+    <a href="/superadmin/users/" class="btn btn-primary"><i class="fas fa-users me-1"></i>Manage Users</a>
+    <a href="/superadmin/sellers/" class="btn btn-success"><i class="fas fa-store me-1"></i>Manage Sellers</a>
+    <a href="/superadmin/products/" class="btn btn-info text-white"><i class="fas fa-box me-1"></i>All Products</a>
+    <a href="/superadmin/discounts/" class="btn btn-warning text-dark"><i class="fas fa-tag me-1"></i>Discounts</a>
+    <a href="/superadmin/analytics/" class="btn btn-dark"><i class="fas fa-chart-bar me-1"></i>Analytics</a>
+    <a href="/superadmin/demand-forecast/" class="btn btn-success">
+      <i class="fas fa-chart-line me-1"></i>Demand Forecast
+    </a>
+    <a href="/superadmin/sales-report/pdf/" class="btn btn-danger">
+      <i class="fas fa-file-pdf me-1"></i>PDF Report
+    </a>
+    <a href="/superadmin/fake-reviews/" class="btn btn-warning text-dark">
+      <i class="fas fa-shield-alt me-1"></i>Fake Reviews
+    </a>
+    <a href="/superadmin/returns/" class="btn btn-danger">
+      <i class="fas fa-undo me-1"></i>Returns
+    </a>
+    <a href="/superadmin/dynamic-pricing/" class="btn btn-info text-white">
+      <i class="fas fa-tags me-1"></i>Dynamic Pricing
+    </a>
+    <a href="/superadmin/chatbot/" class="btn btn-danger position-relative">
+      <i class="fas fa-robot me-1"></i>Chatbot
+      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" id="pending-badge" style="display:none"></span>
+    </a>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- Revenue Chart -->
+    <div class="col-md-8">
+      <div class="card shadow">
+        <div class="card-header fw-bold" style="background:linear-gradient(135deg,#1B3A6B,#2E5FA3);color:white;">
+          <i class="fas fa-chart-line me-2"></i>Monthly Revenue — Last 12 Months
+        </div>
+        <div class="card-body"><canvas id="revenueChart" height="100"></canvas></div>
+      </div>
+    </div>
+    <!-- Payment Pie -->
+    <div class="col-md-4">
+      <div class="card shadow">
+        <div class="card-header fw-bold bg-dark text-white"><i class="fas fa-chart-pie me-2"></i>Payment Methods</div>
+        <div class="card-body"><canvas id="paymentChart" height="200"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- ML Predictions -->
+    <div class="col-md-6">
+      <div class="card shadow border-warning">
+        <div class="card-header bg-warning text-dark fw-bold"><i class="fas fa-magic me-2"></i>🤖 ML Seasonal Forecast</div>
+        <div class="card-body">
+          {% for pred in predictions %}
+          <div class="mb-3 border-bottom pb-2">
+            <div class="d-flex justify-content-between align-items-center">
+              <strong>{{ pred.month }}</strong>
+              <div><span class="badge bg-info">{{ pred.season }}</span>{% if pred.festival %} <span class="badge bg-warning text-dark">{{ pred.festival }}</span>{% endif %}</div>
+            </div>
+            <div class="d-flex gap-1 mt-1">
+              {% for cat in pred.categories %}<span class="badge bg-primary">{{ cat }}</span>{% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <!-- Regional -->
+    <div class="col-md-6">
+      <div class="card shadow">
+        <div class="card-header bg-info text-white fw-bold"><i class="fas fa-map-marked-alt me-2"></i>Regional Demand</div>
+        <div class="card-body p-0">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light"><tr><th>State</th><th>Category</th><th>Units</th></tr></thead>
+            <tbody>
+              {% for r in regional_data %}
+              <tr><td>{{ r.state }}</td><td><span class="badge bg-secondary">{{ r.category }}</span></td><td><strong>{{ r.quantity }}</strong></td></tr>
+              {% empty %}
+              <tr><td colspan="3" class="text-center py-3 text-muted">No data yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock Alerts -->
+  {% if alerts %}
+  <div class="card shadow border-danger mb-4">
+    <div class="card-header bg-danger text-white fw-bold"><i class="fas fa-exclamation-triangle me-2"></i>Platform-Wide Stock Alerts</div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light"><tr><th>Product</th><th>Seller</th><th>Stock</th><th>7-Day Demand</th></tr></thead>
+        <tbody>
+          {% for a in alerts %}
+          <tr class="table-warning">
+            <td><strong>{{ a.product.product_name }}</strong></td>
+            <td>{{ a.product.seller.name }}</td>
+            <td><span class="badge bg-danger">{{ a.current_stock }}</span></td>
+            <td><span class="badge bg-warning text-dark">{{ a.predicted_demand|floatformat:0 }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Recent Orders -->
+  <div class="card shadow mb-4">
+    <div class="card-header fw-bold bg-dark text-white"><i class="fas fa-list me-2"></i>Recent Orders</div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light"><tr><th>Order ID</th><th>Customer</th><th>Amount</th><th>Payment</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>
+          {% for order in recent_orders %}
+          <tr>
+            <td><strong>#{{ order.order_id|stringformat:"s"|slice:":8"|upper }}</strong></td>
+            <td>{{ order.user.name }}</td>
+            <td>₹{{ order.total_amount }}</td>
+            <td>{{ order.get_payment_method_display }}</td>
+            <td><span class="badge bg-{% if order.order_status == 'Delivered' %}success{% elif order.order_status == 'Cancelled' %}danger{% else %}warning text-dark{% endif %}">{{ order.order_status }}</span></td>
+            <td>{{ order.order_date|date:"d M Y" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center py-3 text-muted">No orders yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const labels  = {{ labels|safe }};
+const revData = {{ rev_data|safe }};
+const pmData  = {{ pm_data|safe }};
+
+new Chart(document.getElementById('revenueChart'), {
+  type: 'line',
+  data: {
+    labels: labels,
+    datasets: [{ label: 'Revenue (₹)', data: revData, borderColor: '#1B3A6B', backgroundColor: 'rgba(27,58,107,0.1)', tension: 0.4, fill: true }]
+  },
+  options: { responsive: true, plugins: { legend: { display: false } } }
+});
+
+const pmLabels = pmData.map(d => d.payment_method);
+const pmValues = pmData.map(d => d.c);
+new Chart(document.getElementById('paymentChart'), {
+  type: 'doughnut',
+  data: {
+    labels: pmLabels,
+    datasets: [{ data: pmValues, backgroundColor: ['#0d6efd','#198754','#ffc107','#dc3545'] }]
+  },
+  options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Payment — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+      <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white fw-bold"><i class="fas fa-credit-card me-2"></i>Complete Payment</div>
+        <div class="card-body p-4">
+          <h4 class="fw-bold text-primary">₹{{ order.total_amount }}</h4>
+          <p class="text-muted">Order #{{ order.order_id|stringformat:"s"|slice:":8"|upper }}</p>
+          <button id="rzpBtn" class="btn btn-primary btn-lg fw-bold w-100">
+            <i class="fas fa-lock me-2"></i>Pay Now ₹{{ order.total_amount }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+document.getElementById('rzpBtn').onclick = function(){
+  var options = {
+    key: "{{ razorpay_key }}",
+    amount: {{ amount }},
+    currency: "INR",
+    name: "OnlineBazar",
+    description: "Order Payment",
+    order_id: "{{ razorpay_order_id }}",
+    handler: function(response){
+      var form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/payments/callback/';
+      ['razorpay_payment_id','razorpay_order_id','razorpay_signature'].forEach(function(k){
+        var input = document.createElement('input');
+        input.type = 'hidden'; input.name = k; input.value = response[k];
+        form.appendChild(input);
+      });
+      var csrf = document.createElement('input');
+      csrf.type='hidden'; csrf.name='csrfmiddlewaretoken';
+      csrf.value='{{ csrf_token }}';
+      form.appendChild(csrf);
+      document.body.appendChild(form); form.submit();
+    },
+    theme: { color: "#0d6efd" }
+  };
+  var rzp = new Razorpay(options); rzp.open();
+};
+</script>
+{% endblock %}

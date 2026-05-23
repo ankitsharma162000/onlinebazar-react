@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Seller Activity Log — SuperAdmin{% endblock %}
+{% block content %}
+<div class="container-fluid mt-3 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-0"><i class="fas fa-history text-primary me-2"></i>Seller Activity Log</h4>
+      <small class="text-muted">Track all seller actions — discounts, price changes, return decisions</small>
+    </div>
+    <a href="/superadmin/dashboard/" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Dashboard</a>
+  </div>
+
+  <!-- SUMMARY CARDS -->
+  <div class="row g-3 mb-4">
+    {% for s in summary %}
+    <div class="col-6 col-md-2">
+      <div class="card border-0 shadow-sm text-center p-3
+        {% if s.action == 'discount_added' %}bg-warning text-dark
+        {% elif s.action == 'discount_removed' %}bg-secondary text-white
+        {% elif s.action == 'price_changed' %}bg-primary text-white
+        {% elif s.action == 'return_approved' %}bg-success text-white
+        {% elif s.action == 'return_rejected' %}bg-danger text-white
+        {% else %}bg-light{% endif %}">
+        <h4 class="fw-bold mb-0">{{ s.count }}</h4>
+        <small>{{ s.action|title|cut:"_" }}</small>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- FILTERS -->
+  <div class="card shadow-sm mb-4 border-0">
+    <div class="card-body">
+      <form method="GET" class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Filter by Seller</label>
+          <select name="seller_id" class="form-select">
+            <option value="">All Sellers</option>
+            {% for s in sellers %}
+            <option value="{{ s.seller_id }}" {% if seller_filter == s.seller_id|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Filter by Action</label>
+          <select name="action" class="form-select">
+            <option value="">All Actions</option>
+            <option value="discount_added" {% if action_filter == 'discount_added' %}selected{% endif %}>Discount Added</option>
+            <option value="discount_removed" {% if action_filter == 'discount_removed' %}selected{% endif %}>Discount Removed</option>
+            <option value="price_changed" {% if action_filter == 'price_changed' %}selected{% endif %}>Price Changed</option>
+            <option value="return_approved" {% if action_filter == 'return_approved' %}selected{% endif %}>Return Approved</option>
+            <option value="return_rejected" {% if action_filter == 'return_rejected' %}selected{% endif %}>Return Rejected</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-1"></i>Apply Filter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ACTIVITY TABLE -->
+  <div class="card shadow border-0">
+    <div class="card-header bg-dark text-white fw-bold">
+      <i class="fas fa-list me-2"></i>Activity Log ({{ activities|length }} entries)
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr><th>Date & Time</th><th>Seller</th><th>Action</th><th>Product</th><th>Details</th></tr>
+        </thead>
+        <tbody>
+          {% for a in activities %}
+          <tr>
+            <td><small>{{ a.created_at|date:"d M Y" }}<br>{{ a.created_at|time:"H:i" }}</small></td>
+            <td><strong>{{ a.seller.name }}</strong><br><small class="text-muted">{{ a.seller.email }}</small></td>
+            <td>
+              <span class="badge
+                {% if a.action == 'discount_added' %}bg-warning text-dark
+                {% elif a.action == 'discount_removed' %}bg-secondary
+                {% elif a.action == 'price_changed' %}bg-primary
+                {% elif a.action == 'return_approved' %}bg-success
+                {% elif a.action == 'return_rejected' %}bg-danger
+                {% else %}bg-info{% endif %}">
+                {{ a.get_action_display }}
+              </span>
+            </td>
+            <td>{% if a.product %}<small>{{ a.product.product_name|truncatechars:25 }}</small>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+            <td><small class="text-muted">{{ a.details }}</small></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-4">No activity recorded yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

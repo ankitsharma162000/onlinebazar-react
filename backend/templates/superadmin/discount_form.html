@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Create Discount — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-md-7">
+      <div class="card shadow">
+        <div class="card-header bg-warning text-dark fw-bold"><i class="fas fa-tag me-2"></i>Create Discount / Coupon Code</div>
+        <div class="card-body p-4">
+          <form method="POST">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Coupon Code *</label>
+                <input type="text" name="code" class="form-control text-uppercase fw-bold" placeholder="e.g. DIWALI20" required style="letter-spacing:2px;"/>
+                <small class="text-muted">Will be auto-converted to UPPERCASE</small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Discount Type *</label>
+                <select name="discount_type" class="form-select" required>
+                  <option value="flat">Flat Amount (₹)</option>
+                  <option value="percent">Percentage (%)</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Discount Value *</label>
+                <input type="number" name="value" class="form-control" step="0.01" min="0.01" placeholder="e.g. 100 or 20" required/>
+                <small class="text-muted">Enter ₹ amount or % value</small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Applicable Category</label>
+                <select name="applicable_category" class="form-select">
+                  <option value="">All Categories</option>
+                  {% for val, label in categories %}
+                  <option value="{{ val }}">{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Festival / Occasion</label>
+                <input type="text" name="festival_name" class="form-control" placeholder="e.g. Diwali, Christmas, Holi"/>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Valid From *</label>
+                <input type="date" name="valid_from" class="form-control" required/>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Valid Until *</label>
+                <input type="date" name="valid_until" class="form-control" required/>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-warning text-dark fw-bold w-100 mt-4 btn-lg">
+              <i class="fas fa-tag me-2"></i>Create Coupon Code
+            </button>
+          </form>
+        </div>
+      </div>
+      <a href="/superadmin/discounts/" class="btn btn-outline-secondary w-100 mt-2">← Back to Discounts</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

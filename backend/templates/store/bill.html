@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% block title %}Invoice #{{ order.order_id|stringformat:"s"|slice:":8"|upper }} — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container py-4">
+
+  <!-- Actions -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0">
+      <i class="fas fa-file-invoice text-primary me-2"></i>
+      Invoice #{{ order.order_id|stringformat:"s"|slice:":8"|upper }}
+    </h4>
+    <div class="d-flex gap-2">
+      <a href="/order/bill/{{ order.order_id }}/pdf/" class="btn btn-danger">
+        <i class="fas fa-file-pdf me-1"></i> Download PDF
+      </a>
+      <button onclick="window.print()" class="btn btn-outline-primary">
+        <i class="fas fa-print me-1"></i> Print
+      </button>
+      <a href="/user/orders/" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i> My Orders
+      </a>
+    </div>
+  </div>
+
+  <!-- Invoice Card -->
+  <div class="card shadow-sm" id="invoice-content">
+    <!-- Invoice Header -->
+    <div class="card-header p-0">
+      <div class="d-flex justify-content-between align-items-center p-4"
+           style="background:linear-gradient(135deg,#2874F0,#1a5ecf);">
+        <div>
+          <h3 class="text-white fw-bold mb-0">🛒 OnlineBazar</h3>
+          <small class="text-white-50">India's Growing Marketplace</small>
+          {% if order.is_bazar_member %}
+          <div class="mt-1">
+            <span class="badge px-3 py-1" style="background:#FB641B;font-size:12px;">
+              ⭐ Bazar Prime Order — Free Delivery
+            </span>
+          </div>
+          {% endif %}
+        </div>
+        <div class="text-end">
+          <h4 class="text-white fw-bold mb-1">TAX INVOICE</h4>
+          <div class="text-white-50 small">
+            <div>Order: #{{ order.order_id|stringformat:"s"|slice:":12"|upper }}</div>
+            <div>Date: {{ order.order_date|date:"d M Y, g:i A" }}</div>
+            <div>Status: <span class="badge bg-success">{{ order.order_status }}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body p-4">
+
+      <!-- Seller & Customer Addresses -->
+      <div class="row g-3 mb-4">
+        {% for s in sellers %}
+        <div class="col-md-4">
+          <div class="p-3 rounded" style="background:#F8F9FF;border:1px solid #e0e8ff;">
+            <div class="text-muted small fw-bold mb-2 text-uppercase">📦 From (Seller)</div>
+            <div class="fw-bold">{{ s.seller.name }}</div>
+            <div class="small text-muted">{{ s.seller.address_line }}, {{ s.seller.district }}</div>
+            <div class="small text-muted">{{ s.seller.state }} — {{ s.seller.pincode }}</div>
+            <div class="small text-primary mt-1">📧 {{ s.seller.email }}</div>
+            <div class="small text-muted">📞 {{ s.seller.phone_number }}</div>
+          </div>
+        </div>
+        {% endfor %}
+        <div class="col-md-4 ms-auto">
+          <div class="p-3 rounded" style="background:#FFF8F0;border:1px solid #ffe0c0;">
+            <div class="text-muted small fw-bold mb-2 text-uppercase">🏠 Ship To (Customer)</div>
+            <div class="fw-bold">{{ user.name }}</div>
+            <div class="small text-muted">{{ user.get_full_address }}</div>
+            <div class="small text-muted mt-1">📞 {{ user.phone_number }}</div>
+          </div>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- Products Table -->
+      <h6 class="fw-bold mb-3 text-primary">📦 Products Ordered</h6>
+      <div class="table-responsive mb-4">
+        <table class="table table-bordered">
+          <thead style="background:#2874F0;color:white;">
+            <tr>
+              <th>#</th>
+              <th>Product</th>
+              <th>Seller</th>
+              <th class="text-center">Qty</th>
+              <th class="text-end">Unit Price</th>
+              <th class="text-end">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>
+                <div class="fw-semibold">{{ item.product.product_name }}</div>
+                <small class="text-muted">{{ item.product.category }}</small>
+              </td>
+              <td class="small">{{ item.product.seller.name }}</td>
+              <td class="text-center">{{ item.quantity }}</td>
+              <td class="text-end">₹{{ item.price_at_purchase }}</td>
+              <td class="text-end fw-semibold">₹{{ item.subtotal }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Bill Summary -->
+      <div class="row justify-content-end">
+        <div class="col-md-5">
+          <div class="card border-0" style="background:#F8F9FF;">
+            <div class="card-header fw-bold text-primary bg-transparent border-bottom">
+              💰 Bill Summary
+            </div>
+            <div class="card-body p-3">
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Product Subtotal</span>
+                <span class="fw-semibold">₹{{ order.subtotal }}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">🚚 Delivery Charges</span>
+                {% if order.is_bazar_member %}
+                <span class="text-success fw-semibold">₹0.00 <small>(Prime ⭐)</small></span>
+                {% elif order.delivery_charge == 0 %}
+                <span class="text-success fw-semibold">₹0.00 <small>(Free above ₹500)</small></span>
+                {% else %}
+                <span class="text-danger fw-semibold">₹{{ order.delivery_charge }}</span>
+                {% endif %}
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">🏢 Platform Fee</span>
+                {% if order.is_bazar_member %}
+                <span class="text-success fw-semibold">₹0.00 <small>(Prime ⭐)</small></span>
+                {% else %}
+                <span class="text-danger fw-semibold">₹{{ order.platform_fee }}</span>
+                {% endif %}
+              </div>
+              <hr class="my-2">
+              <div class="d-flex justify-content-between">
+                <span class="fw-bold fs-5">Grand Total</span>
+                <span class="fw-bold fs-5 text-primary">₹{{ order.total_amount }}</span>
+              </div>
+              <div class="mt-2 text-muted small">
+                Payment: {{ order.payment_method }} —
+                <span class="badge {% if order.payment_status == 'Paid' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                  {{ order.payment_status }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="card-footer text-center py-3" style="background:#1a1a2e;">
+      <div class="text-white fw-semibold mb-1">🛒 OnlineBazar</div>
+      <div class="text-muted small">Founders: <strong class="text-info">Ankit Sharma</strong> & <strong class="text-info">Niraj Kumar</strong></div>
+      <div class="text-muted small mt-1">This is a computer-generated invoice. No signature required.</div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+@media print {
+  nav, footer, .btn, .d-flex.justify-content-between.align-items-center.mb-4 { display: none !important; }
+  .card { border: none !important; box-shadow: none !important; }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% block title %}Chatbot Management — OnlineBazar Admin{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="fw-bold mb-0"><i class="fas fa-robot text-primary me-2"></i>Chatbot Management</h3>
+      <small class="text-muted">Answer pending questions & manage knowledge base</small>
+    </div>
+    <div class="d-flex gap-2">
+      <span class="badge bg-danger fs-6">{{ pending_count }} Pending</span>
+      <span class="badge bg-success fs-6">{{ knowledge_count }} Knowledge Items</span>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- LEFT: Pending Questions -->
+    <div class="col-lg-7">
+      <div class="card shadow-sm">
+        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+          <h6 class="mb-0"><i class="fas fa-question-circle me-2"></i>Pending Questions from Users</h6>
+          <span class="badge bg-white text-danger">{{ pending_count }} unanswered</span>
+        </div>
+        <div class="card-body p-0">
+          {% if pending_questions %}
+          <div class="list-group list-group-flush">
+            {% for q in pending_questions %}
+            <div class="list-group-item p-3" id="pq-{{ q.id }}">
+              <div class="d-flex justify-content-between mb-2">
+                <div>
+                  <span class="badge bg-warning text-dark me-2">{{ q.session.user_name }}</span>
+                  <small class="text-muted">{{ q.created_at|timesince }} ago</small>
+                </div>
+                <span class="badge bg-danger">Pending</span>
+              </div>
+              <p class="mb-2 fw-semibold">❓ {{ q.question }}</p>
+              <div class="input-group">
+                <input type="text" class="form-control form-control-sm"
+                       placeholder="Type your answer here..."
+                       id="ans-{{ q.id }}">
+                <div class="input-group-text p-0">
+                  <div class="form-check form-switch m-2">
+                    <input class="form-check-input" type="checkbox" id="save-{{ q.id }}" checked>
+                    <label class="form-check-label small" for="save-{{ q.id }}">Save to KB</label>
+                  </div>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="sendAnswer('{{ q.id }}', '{{ q.question|escapejs }}')">
+                  <i class="fas fa-paper-plane"></i> Send
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-center py-5">
+            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+            <h6 class="text-muted">No pending questions! 🎉</h6>
+            <p class="text-muted small">All user questions have been answered.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Knowledge Base -->
+    <div class="col-lg-5">
+
+      <!-- Add new knowledge -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-success text-white">
+          <h6 class="mb-0"><i class="fas fa-plus me-2"></i>Add to Knowledge Base</h6>
+        </div>
+        <div class="card-body">
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">Question / Topic</label>
+            <input type="text" class="form-control form-control-sm" id="kb-question" placeholder="e.g. How to track my order?">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">Keywords <small class="text-muted">(comma separated)</small></label>
+            <input type="text" class="form-control form-control-sm" id="kb-keywords" placeholder="track, order, delivery, status">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Answer</label>
+            <textarea class="form-control form-control-sm" id="kb-answer" rows="3" placeholder="Type the answer the chatbot should give..."></textarea>
+          </div>
+          <button class="btn btn-success btn-sm w-100" onclick="addKnowledge()">
+            <i class="fas fa-brain me-1"></i> Save to Knowledge Base
+          </button>
+        </div>
+      </div>
+
+      <!-- Existing knowledge -->
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between">
+          <h6 class="mb-0"><i class="fas fa-database me-2"></i>Knowledge Base</h6>
+          <span class="badge bg-white text-primary">{{ knowledge_count }} items</span>
+        </div>
+        <div class="card-body p-0" style="max-height:400px;overflow-y:auto;" id="kb-list">
+          {% if knowledge_items %}
+          {% for item in knowledge_items %}
+          <div class="border-bottom p-3" id="kb-{{ item.id }}">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="flex-grow-1 me-2">
+                <p class="mb-1 fw-semibold small">{{ item.question|truncatechars:60 }}</p>
+                <p class="mb-1 text-muted" style="font-size:11px;">🔑 {{ item.keywords }}</p>
+                <p class="mb-0 small text-success">{{ item.answer|truncatechars:80 }}</p>
+              </div>
+              <div class="text-end">
+                <span class="badge bg-primary mb-1">{{ item.hits }} hits</span><br>
+                <button class="btn btn-outline-danger btn-sm mt-1" onclick="deleteKnowledge('{{ item.id }}')">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+          {% else %}
+          <div class="text-center py-4">
+            <i class="fas fa-brain fa-2x text-muted mb-2"></i>
+            <p class="text-muted small">No knowledge items yet.<br>Answer pending questions to build the KB!</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+
+async function sendAnswer(pendingId, question) {
+  const answerEl = document.getElementById('ans-' + pendingId);
+  const saveEl   = document.getElementById('save-' + pendingId);
+  const answer   = answerEl.value.trim();
+  if (!answer) { alert('Please type an answer first!'); return; }
+
+  const res = await fetch('/superadmin/chatbot/answer/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+    body: JSON.stringify({
+      pending_id: pendingId,
+      answer: answer,
+      save_to_knowledge: saveEl.checked,
+      question: question
+    })
+  });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById('pq-' + pendingId).remove();
+    showToast('✅ Answer sent to user!');
+    if (saveEl.checked) setTimeout(() => location.reload(), 1000);
+  }
+}
+
+async function addKnowledge() {
+  const q = document.getElementById('kb-question').value.trim();
+  const k = document.getElementById('kb-keywords').value.trim();
+  const a = document.getElementById('kb-answer').value.trim();
+  if (!q || !k || !a) { alert('Please fill all fields!'); return; }
+
+  const res = await fetch('/superadmin/chatbot/knowledge/add/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+    body: JSON.stringify({ question: q, keywords: k, answer: a })
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast('✅ Saved to Knowledge Base!');
+    setTimeout(() => location.reload(), 800);
+  }
+}
+
+async function deleteKnowledge(kbId) {
+  if (!confirm('Delete this knowledge item?')) return;
+  const res = await fetch('/superadmin/chatbot/knowledge/delete/' + kbId + '/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF }
+  });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById('kb-' + kbId).remove();
+    showToast('🗑️ Deleted!');
+  }
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'position-fixed bottom-0 end-0 m-4 alert alert-success shadow';
+  t.style.zIndex = 9999;
+  t.innerHTML = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// Auto-refresh every 15 seconds to show new pending questions
+setTimeout(() => location.reload(), 15000);
+</script>
+{% endblock %}

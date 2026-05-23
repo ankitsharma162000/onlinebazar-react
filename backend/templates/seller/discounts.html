@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}My Discounts — Seller{% endblock %}
+{% block content %}
+<div class="container-fluid mt-3 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-0"><i class="fas fa-tag text-warning me-2"></i>Product Discounts</h4>
+      <small class="text-muted">Apply discounts to your own products</small>
+    </div>
+    <a href="/seller/dashboard/" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Dashboard</a>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-success alert-dismissible fade show"><i class="fas fa-check-circle me-2"></i>{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- ADD DISCOUNT FORM -->
+  <div class="card shadow mb-4 border-warning">
+    <div class="card-header bg-warning text-dark fw-bold"><i class="fas fa-plus me-2"></i>Add New Discount</div>
+    <div class="card-body">
+      <form method="POST" action="/seller/discounts/add/">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Select Product</label>
+            <select name="product_id" class="form-select" required>
+              <option value="">-- Choose your product --</option>
+              {% for p in products %}
+              <option value="{{ p.product_id }}">{{ p.product_name }} (₹{{ p.price }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Discount Type</label>
+            <select name="discount_type" class="form-select" required>
+              <option value="percent">Percentage (%)</option>
+              <option value="flat">Flat Amount (₹)</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Value</label>
+            <input type="number" name="value" class="form-control" placeholder="e.g. 10" min="1" required>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Start Date</label>
+            <input type="date" name="start_date" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">End Date</label>
+            <input type="date" name="end_date" class="form-control">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-warning fw-bold mt-3"><i class="fas fa-plus me-1"></i>Add Discount</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- DISCOUNTS TABLE -->
+  <div class="card shadow">
+    <div class="card-header bg-dark text-white fw-bold"><i class="fas fa-list me-2"></i>Your Discounts ({{ discounts|length }})</div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr><th>Product</th><th>Type</th><th>Value</th><th>Discounted Price</th><th>Valid</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for d in discounts %}
+          <tr>
+            <td><strong>{{ d.product.product_name }}</strong><br><small class="text-muted">₹{{ d.product.price }} original</small></td>
+            <td><span class="badge bg-info">{{ d.get_discount_type_display }}</span></td>
+            <td class="fw-bold text-danger">{% if d.discount_type == 'percent' %}{{ d.value }}%{% else %}₹{{ d.value }}{% endif %}</td>
+            <td><span class="fw-bold text-success">₹{{ d.discounted_price }}</span></td>
+            <td>
+              {% if d.start_date %}{{ d.start_date }} → {{ d.end_date|default:"No end" }}{% else %}<span class="text-muted">Always</span>{% endif %}
+            </td>
+            <td>
+              {% if d.is_active %}<span class="badge bg-success">Active</span>
+              {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+            </td>
+            <td>
+              <a href="/seller/discounts/toggle/{{ d.id }}/" class="btn btn-sm {% if d.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %} me-1">
+                {% if d.is_active %}<i class="fas fa-pause"></i>{% else %}<i class="fas fa-play"></i>{% endif %}
+              </a>
+              <a href="/seller/discounts/delete/{{ d.id }}/" class="btn btn-sm btn-outline-danger"
+                 onclick="return confirm('Delete this discount?')">
+                <i class="fas fa-trash"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-muted py-4">No discounts yet. Add one above!</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Seller Profile — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-md-7">
+      <div class="card shadow">
+        <div class="card-header bg-success text-white fw-bold"><i class="fas fa-user me-2"></i>Seller Profile</div>
+        <div class="card-body p-4">
+          <form method="POST">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6"><label class="form-label fw-semibold">Name</label><input type="text" name="name" class="form-control" value="{{ seller.name }}" required/></div>
+              <div class="col-md-6"><label class="form-label fw-semibold">Phone</label><input type="text" name="phone_number" class="form-control" maxlength="10" value="{{ seller.phone_number }}" required/></div>
+              <div class="col-12"><label class="form-label fw-semibold">Address</label><input type="text" name="address_line" class="form-control" value="{{ seller.address_line }}" required/></div>
+              <div class="col-md-4"><label class="form-label fw-semibold">District</label><input type="text" name="district" class="form-control" value="{{ seller.district }}" required/></div>
+              <div class="col-md-4"><label class="form-label fw-semibold">State</label><input type="text" name="state" class="form-control" value="{{ seller.state }}" required/></div>
+              <div class="col-md-4"><label class="form-label fw-semibold">Pincode</label><input type="text" name="pincode" class="form-control" value="{{ seller.pincode }}" required/></div>
+              <div class="col-12"><label class="form-label text-muted">Email (cannot change)</label><input type="email" class="form-control bg-light" value="{{ seller.email }}" disabled/></div>
+            </div>
+            <button type="submit" class="btn btn-success w-100 fw-bold mt-4">Save Changes</button>
+          </form>
+        </div>
+      </div>
+      <a href="/seller/dashboard/" class="btn btn-outline-secondary w-100 mt-2">← Dashboard</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

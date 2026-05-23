@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% block title %}My Cart — OnlineBazar
+<!-- Remove Confirmation Modal -->
+<div class="modal fade" id="removeConfirmModal" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h6 class="modal-title"><i class="fas fa-trash me-2"></i>Remove Item?</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center">
+        <p class="mb-1">Remove <strong id="removeItemName"></strong> from your cart?</p>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep it</button>
+        <button type="button" class="btn btn-danger" id="confirmRemoveBtn">Yes, Remove</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  var _pendingRemoveForm = null;
+  function confirmRemove(formId, itemName) {
+    _pendingRemoveForm = document.getElementById(formId);
+    document.getElementById('removeItemName').textContent = itemName;
+    new bootstrap.Modal(document.getElementById('removeConfirmModal')).show();
+  }
+  document.getElementById('confirmRemoveBtn').addEventListener('click', function() {
+    if (_pendingRemoveForm) _pendingRemoveForm.submit();
+  });
+</script>
+{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h3 class="fw-bold mb-4"><i class="fas fa-shopping-cart text-primary me-2"></i>My Cart</h3>
+  {% if items %}
+  <div class="row g-4">
+    <div class="col-lg-8">
+      {% for item in items %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-2">
+              {% if item.product.product_image %}
+              <img src="{{ item.product.product_image.url }}" class="img-fluid rounded" style="height:80px;object-fit:cover;" alt="{{ item.product.product_name }}"/>
+              {% else %}
+              <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height:80px;"><i class="fas fa-box text-muted"></i></div>
+              {% endif %}
+            </div>
+            <div class="col-5">
+              <h6 class="fw-bold mb-0">{{ item.product.product_name }}</h6>
+              <span class="badge bg-secondary small">{{ item.product.category }}</span>
+              <p class="text-primary fw-bold mb-0 mt-1">₹{{ item.product.price }}</p>
+            </div>
+            <div class="col-3">
+              <div class="d-flex align-items-center gap-1">
+                {% if item.quantity == 1 %}
+                <button type="button" class="btn btn-outline-secondary btn-sm"
+                  onclick="confirmRemove('removeForm_{{ item.id }}', '{{ item.product.product_name|escapejs }}')">−</button>
+                <form id="removeForm_{{ item.id }}" method="POST" action="/cart/update/{{ item.id }}/" style="display:none;">
+                  {% csrf_token %}<input type="hidden" name="action" value="remove"/>
+                </form>
+                {% else %}
+                <form method="POST" action="/cart/update/{{ item.id }}/">{% csrf_token %}
+                  <input type="hidden" name="action" value="decrease"/>
+                  <button class="btn btn-outline-secondary btn-sm">−</button>
+                </form>
+                {% endif %}
+                <span class="fw-bold px-2">{{ item.quantity }}</span>
+                <form method="POST" action="/cart/update/{{ item.id }}/">{% csrf_token %}
+                  <input type="hidden" name="action" value="increase"/>
+                  <button class="btn btn-outline-secondary btn-sm">+</button>
+                </form>
+              </div>
+            </div>
+            <div class="col-2 text-end">
+              <p class="fw-bold text-success mb-1">₹{{ item.product.price|floatformat:2 }}</p>
+              <form method="POST" action="/cart/update/{{ item.id }}/">{% csrf_token %}
+                <input type="hidden" name="action" value="remove"/>
+                <button class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="col-lg-4">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white fw-bold">Order Summary</div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-2"><span>Subtotal</span><strong>₹{{ subtotal }}</strong></div>
+          {% if disc_amount > 0 %}
+          <div class="d-flex justify-content-between mb-2 text-success"><span>Discount ({{ disc_obj.code }})</span><strong>−₹{{ disc_amount }}</strong></div>
+          {% endif %}
+          <hr/>
+          <div class="d-flex justify-content-between fw-bold fs-5"><span>Total</span><span class="text-primary">₹{{ total }}</span></div>
+          <!-- Coupon -->
+          <form method="POST" action="/cart/coupon/apply/" class="mt-3">
+            {% csrf_token %}
+            <div class="input-group">
+              <input type="text" class="form-control" name="coupon_code" placeholder="Coupon code" value="{{ coupon_code|default:'' }}"/>
+              <button class="btn btn-outline-primary" type="submit">Apply</button>
+            </div>
+          </form>
+          {% if coupon_code %}
+          <form method="POST" action="/cart/coupon/remove/" class="mt-1">{% csrf_token %}
+            <button class="btn btn-sm btn-outline-danger w-100">Remove Coupon</button>
+          </form>
+          {% endif %}
+          <a href="/checkout/" class="btn btn-primary w-100 fw-bold mt-3 btn-lg"><i class="fas fa-lock me-2"></i>Proceed to Checkout</a>
+          <a href="/" class="btn btn-outline-secondary w-100 mt-2">Continue Shopping</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <i class="fas fa-shopping-cart fa-5x text-muted mb-3"></i>
+    <h4 class="text-muted">Your cart is empty</h4>
+    <a href="/" class="btn btn-primary mt-3 btn-lg">Start Shopping</a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Remove Confirmation Modal -->
+<div class="modal fade" id="removeConfirmModal" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h6 class="modal-title"><i class="fas fa-trash me-2"></i>Remove Item?</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center">
+        <p class="mb-1">Remove <strong id="removeItemName"></strong> from your cart?</p>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep it</button>
+        <button type="button" class="btn btn-danger" id="confirmRemoveBtn">Yes, Remove</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  var _pendingRemoveForm = null;
+  function confirmRemove(formId, itemName) {
+    _pendingRemoveForm = document.getElementById(formId);
+    document.getElementById('removeItemName').textContent = itemName;
+    new bootstrap.Modal(document.getElementById('removeConfirmModal')).show();
+  }
+  document.getElementById('confirmRemoveBtn').addEventListener('click', function() {
+    if (_pendingRemoveForm) _pendingRemoveForm.submit();
+  });
+</script>
+{% endblock %}

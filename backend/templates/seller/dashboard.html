@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+{% block title %}Seller Dashboard — OnlineBazar{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-3 px-4">
+
+  <!-- ── TOP HEADER ──────────────────────────────────────── -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-0"><i class="fas fa-store text-success me-2"></i>Seller Dashboard</h4>
+      <small class="text-muted">Welcome, {{ seller.name }}</small>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="/seller/products/add/" class="btn btn-success fw-bold"><i class="fas fa-plus me-1"></i>Add Product</a>
+      <a href="/seller/logout/" class="btn btn-outline-danger">Logout</a>
+    </div>
+  </div>
+
+  <!-- ── KPI CARDS ───────────────────────────────────────── -->
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+      <div class="card shadow-sm border-0 bg-primary text-white text-center p-3">
+        <i class="fas fa-box fa-2x mb-2"></i>
+        <h3 class="fw-bold">{{ total_products }}</h3>
+        <p class="mb-0 small">Total Products</p>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card shadow-sm border-0 bg-success text-white text-center p-3">
+        <i class="fas fa-shopping-bag fa-2x mb-2"></i>
+        <h3 class="fw-bold">{{ total_orders }}</h3>
+        <p class="mb-0 small">Total Orders</p>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card shadow-sm border-0 bg-warning text-dark text-center p-3">
+        <i class="fas fa-rupee-sign fa-2x mb-2"></i>
+        <h3 class="fw-bold">&#x20B9;{{ revenue|floatformat:0 }}</h3>
+        <p class="mb-0 small">Revenue (30 days)</p>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card shadow-sm border-0 bg-danger text-white text-center p-3">
+        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+        <h3 class="fw-bold">{{ alerts|length }}</h3>
+        <p class="mb-0 small">Stock Alerts</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── NAV BUTTONS — below KPI, above graphs ───────────── -->
+  <div class="d-flex gap-2 flex-wrap mb-4">
+    <a href="/seller/products/" class="btn btn-outline-primary">
+      <i class="fas fa-box me-1"></i>My Products
+    </a>
+    <a href="/seller/orders/" class="btn btn-outline-success">
+      <i class="fas fa-shopping-bag me-1"></i>All Orders
+    </a>
+    <a href="/seller/order-requests/" class="btn btn-warning fw-bold position-relative">
+      <i class="fas fa-inbox me-1"></i>Order Requests
+      {% if pending_requests_count > 0 %}
+      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+        {{ pending_requests_count }}
+      </span>
+      {% endif %}
+    </a>
+    <a href="/seller/discounts/" class="btn btn-outline-warning">
+      <i class="fas fa-tag me-1"></i>My Discounts
+    </a>
+    <a href="/seller/dynamic-pricing/" class="btn btn-outline-info">
+      <i class="fas fa-chart-line me-1"></i>Dynamic Pricing
+    </a>
+    <a href="/seller/returns/" class="btn btn-outline-danger">
+      <i class="fas fa-undo me-1"></i>Return Requests
+    </a>
+    <a href="/seller/profile/" class="btn btn-outline-secondary">
+      <i class="fas fa-user me-1"></i>Profile
+    </a>
+  </div>
+
+  <!-- ── STOCK ALERTS ────────────────────────────────────── -->
+  {% if alerts %}
+  <div class="card border-danger shadow mb-4">
+    <div class="card-header bg-danger text-white fw-bold">
+      <i class="fas fa-exclamation-triangle me-2"></i>Low Stock Alerts (ML Predictions)
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>Product</th><th>Current Stock</th><th>7-Day Predicted Demand</th><th>Action</th></tr>
+          </thead>
+          <tbody>
+            {% for alert in alerts %}
+            <tr class="table-danger">
+              <td>
+                <strong>{{ alert.product.product_name }}</strong><br/>
+                <small class="text-muted">{{ alert.product.category }}</small>
+              </td>
+              <td><span class="badge bg-danger fs-6">{{ alert.current_stock }} units</span></td>
+              <td><span class="badge bg-warning text-dark fs-6">{{ alert.predicted_demand|floatformat:0 }} units needed</span></td>
+              <td><a href="/seller/products/edit/{{ alert.product.product_id }}/" class="btn btn-sm btn-warning fw-bold">Restock Now</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── CHARTS ──────────────────────────────────────────── -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-8">
+      <div class="card shadow h-100">
+        <div class="card-header fw-bold bg-primary text-white">
+          <i class="fas fa-chart-line me-2"></i>Revenue — Last 7 Days
+        </div>
+        <div class="card-body">
+          <canvas id="revenueChart" height="100"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow h-100">
+        <div class="card-header fw-bold bg-success text-white">
+          <i class="fas fa-chart-pie me-2"></i>Sales by Category
+        </div>
+        <div class="card-body d-flex align-items-center justify-content-center">
+          {% if cat_data %}
+          <canvas id="categoryChart"></canvas>
+          {% else %}
+          <p class="text-muted text-center my-auto">No sales data yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ML PREDICTIONS + REGIONAL ──────────────────────── -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-6">
+      <div class="card shadow border-warning h-100">
+        <div class="card-header bg-warning text-dark fw-bold">
+          <i class="fas fa-magic me-2"></i>ML — Seasonal Sales Forecast
+        </div>
+        <div class="card-body">
+          {% for pred in predictions %}
+          <div class="mb-3 border-bottom pb-2">
+            <div class="d-flex justify-content-between align-items-center">
+              <strong>{{ pred.month }}</strong>
+              <div class="d-flex gap-1">
+                <span class="badge bg-info">{{ pred.season }}</span>
+                {% if pred.festival %}<span class="badge bg-warning text-dark">{{ pred.festival }}</span>{% endif %}
+              </div>
+            </div>
+            <p class="mb-0 text-muted small mt-1">Predicted top categories:</p>
+            <div class="d-flex gap-1 mt-1 flex-wrap">
+              {% for cat in pred.categories %}<span class="badge bg-primary">{{ cat }}</span>{% endfor %}
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-muted">Add more sales data for ML predictions.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card shadow h-100">
+        <div class="card-header bg-info text-white fw-bold">
+          <i class="fas fa-map-marked-alt me-2"></i>Regional Demand
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr><th>State</th><th>Category</th><th>Units Sold</th></tr>
+            </thead>
+            <tbody>
+              {% for r in regional_data %}
+              <tr>
+                <td>{{ r.state }}</td>
+                <td><span class="badge bg-secondary">{{ r.category }}</span></td>
+                <td><strong>{{ r.quantity }}</strong></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="3" class="text-center text-muted py-3">No regional data yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RECENT ORDERS ───────────────────────────────────── -->
+  <div class="card shadow mb-4">
+    <div class="card-header fw-bold bg-dark text-white d-flex justify-content-between align-items-center">
+      <span><i class="fas fa-list me-2"></i>Recent Orders</span>
+      <a href="/seller/orders/" class="btn btn-sm btn-light">View All</a>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr><th>Order ID</th><th>Customer</th><th>Amount</th><th>Status</th><th>Date</th></tr>
+        </thead>
+        <tbody>
+          {% for order in recent_orders %}
+          <tr>
+            <td><strong>#{{ order.order_id|stringformat:"s"|slice:":8"|upper }}</strong></td>
+            <td>{{ order.user.name }}</td>
+            <td>&#x20B9;{{ order.total_amount }}</td>
+            <td>
+              <span class="badge bg-{% if order.order_status == 'Delivered' %}success{% elif order.order_status == 'Cancelled' %}danger{% else %}warning text-dark{% endif %}">
+                {{ order.order_status }}
+              </span>
+            </td>
+            <td>{{ order.order_date|date:"d M Y" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-3">No orders yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  // ── Revenue Line Chart ───────────────────────────────────
+  var labels  = {{ labels|safe }};
+  var revData = {{ data_rev|safe }};
+
+  var revenueCtx = document.getElementById('revenueChart');
+  if (revenueCtx && labels.length > 0) {
+    new Chart(revenueCtx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Revenue (Rs.)',
+          data: revData,
+          borderColor: '#0d6efd',
+          backgroundColor: 'rgba(13,110,253,0.1)',
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: '#0d6efd',
+          pointRadius: 5,
+          pointHoverRadius: 7,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { callback: function(v) { return 'Rs.' + v; } }
+          }
+        }
+      }
+    });
+  }
+
+  // ── Category Doughnut Chart ──────────────────────────────
+  var catRaw = {{ cat_data|safe }};
+  var categoryCtx = document.getElementById('categoryChart');
+  if (categoryCtx && catRaw && catRaw.length > 0) {
+    var catLabels = catRaw.map(function(d) { return d.product__category || 'Other'; });
+    var catValues = catRaw.map(function(d) { return parseFloat(d.total) || 0; });
+    new Chart(categoryCtx, {
+      type: 'doughnut',
+      data: {
+        labels: catLabels,
+        datasets: [{
+          data: catValues,
+          backgroundColor: ['#0d6efd','#198754','#ffc107','#dc3545','#0dcaf0','#6c757d'],
+          borderWidth: 2,
+          hoverOffset: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10 } }
+        }
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

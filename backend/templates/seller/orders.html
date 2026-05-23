@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+{% block title %}Seller Orders — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h4 class="fw-bold mb-4"><i class="fas fa-shopping-bag text-success me-2"></i>All Orders</h4>
+  {% for order in orders %}
+  <div class="card shadow mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center bg-light">
+      <div>
+        <strong>#{{ order.order_id|stringformat:"s"|slice:":8"|upper }}</strong>
+        <span class="text-muted ms-2 small">{{ order.order_date|date:"d M Y, h:i A" }}</span>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-{% if order.order_status == 'Delivered' %}success{% elif order.order_status == 'Cancelled' %}danger{% else %}warning text-dark{% endif %} fs-6">
+          {{ order.order_status }}
+        </span>
+        <!-- Update Status -->
+        <form method="POST" action="/seller/orders/update/{{ order.order_id }}/" class="d-flex gap-1">
+          {% csrf_token %}
+          <select name="status" class="form-select form-select-sm" style="width:160px;">
+            {% for s in "Placed,Confirmed,Shipped,Out for Delivery,Delivered,Cancelled"|split:"," %}
+            <option value="{{ s }}" {% if order.order_status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn btn-sm btn-success fw-bold">Update</button>
+        </form>
+      </div>
+    </div>
+    <div class="card-body p-2">
+      <div class="row align-items-center">
+        <div class="col-md-6">
+          <p class="mb-1"><i class="fas fa-user text-muted me-2"></i>{{ order.user.name }} — {{ order.user.phone_number }}</p>
+          <p class="mb-0 text-muted small"><i class="fas fa-map-marker-alt me-2"></i>{{ order.delivery_address }}</p>
+        </div>
+        <div class="col-md-3">
+          <p class="mb-1"><span class="text-muted">Payment:</span> <strong>{{ order.get_payment_method_display }}</strong></p>
+          <span class="badge bg-{% if order.payment_status == 'Paid' %}success{% else %}secondary{% endif %}">{{ order.payment_status }}</span>
+        </div>
+        <div class="col-md-3 text-end">
+          <h5 class="fw-bold text-primary mb-0">₹{{ order.total_amount }}</h5>
+          <small class="text-muted">{{ order.items.count }} item(s)</small>
+        </div>
+      </div>
+      <!-- Items -->
+      <div class="mt-2 border-top pt-2">
+        {% for item in order.items.all %}
+        {% if item.product.seller == seller %}
+        <div class="d-flex align-items-center gap-2 mb-1">
+          {% if item.product.product_image %}
+          <img src="{{ item.product.product_image.url }}" style="width:40px;height:40px;object-fit:cover;" class="rounded" alt=""/>
+          {% endif %}
+          <span class="small">{{ item.product.product_name }}</span>
+          <span class="badge bg-light text-dark border">×{{ item.quantity }}</span>
+          <span class="small text-muted ms-auto">₹{{ item.price_at_purchase }}</span>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="text-center py-5">
+    <i class="fas fa-shopping-bag fa-4x text-muted mb-3"></i>
+    <h5 class="text-muted">No orders yet.</h5>
+  </div>
+  {% endfor %}
+  <a href="/seller/dashboard/" class="btn btn-outline-secondary mt-2">← Dashboard</a>
+</div>
+{% endblock %}

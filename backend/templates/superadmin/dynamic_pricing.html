@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block title %}Dynamic Pricing — OnlineBazar Admin{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="fw-bold mb-0"><i class="fas fa-tags text-success me-2"></i>AI Dynamic Pricing Engine</h3>
+      <small class="text-muted">ML adjusts prices based on stock, demand, time & ratings</small>
+    </div>
+    <span class="badge bg-primary fs-6">{{ total_products }} price recommendations</span>
+  </div>
+
+  <!-- How it works -->
+  <div class="alert alert-info border-0 shadow-sm mb-4">
+    <strong>🤖 How Dynamic Pricing Works:</strong>
+    Prices are adjusted based on → 📦 Stock Level · 📈 Category Demand · 📅 Day/Time · ⭐ Product Rating
+    <br><small>Review suggestions and click "Apply Price" to update. Changes take effect immediately.</small>
+  </div>
+
+  {% if recommendations %}
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-dark">
+            <tr>
+              <th>Product</th>
+              <th>Category</th>
+              <th>Current Price</th>
+              <th>Suggested Price</th>
+              <th>Change</th>
+              <th>Recommendation</th>
+              <th>Reasons</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in recommendations %}
+            <tr>
+              <td>
+                <div class="fw-semibold small">{{ item.product.product_name|truncatechars:30 }}</div>
+                <small class="text-muted">Stock: {{ item.product.stock_quantity }}</small>
+              </td>
+              <td><span class="badge bg-secondary">{{ item.product.category }}</span></td>
+              <td class="fw-bold">₹{{ item.product.price }}</td>
+              <td class="fw-bold {% if item.rec.direction == 'up' %}text-danger{% elif item.rec.direction == 'down' %}text-success{% else %}text-muted{% endif %}">
+                ₹{{ item.rec.suggested_price }}
+              </td>
+              <td>
+                {% if item.rec.direction == 'up' %}
+                <span class="badge bg-danger">↑ +{{ item.rec.change_pct }}%</span>
+                {% elif item.rec.direction == 'down' %}
+                <span class="badge bg-success">↓ {{ item.rec.change_pct }}%</span>
+                {% else %}
+                <span class="badge bg-secondary">→ Stable</span>
+                {% endif %}
+              </td>
+              <td><span class="badge bg-primary">{{ item.rec.recommendation }}</span></td>
+              <td class="small text-muted" style="max-width:200px;">
+                {% for r in item.rec.reasons %}<div>• {{ r }}</div>{% endfor %}
+              </td>
+              <td>
+                <button class="btn btn-success btn-sm"
+                        onclick="applyPrice('{{ item.product.product_id }}', {{ item.rec.suggested_price }}, this)">
+                  <i class="fas fa-check me-1"></i>Apply
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="text-center py-5">
+    <i class="fas fa-tags fa-4x text-muted mb-3"></i>
+    <h5 class="text-muted">No pricing recommendations at this time</h5>
+    <p class="text-muted">Add products and orders to see dynamic pricing suggestions</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+async function applyPrice(productId, newPrice, btn) {
+  if (!confirm(`Apply new price ₹${newPrice} to this product?`)) return;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  const res = await fetch('/superadmin/dynamic-pricing/', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
+    body: JSON.stringify({product_id: productId, new_price: newPrice})
+  });
+  const data = await res.json();
+  if (data.success) {
+    btn.closest('tr').style.opacity = '0.4';
+    btn.innerHTML = '✅ Applied';
+    showToast('✅ Price updated to ₹' + newPrice);
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = 'Apply';
+    alert('Error: ' + data.error);
+  }
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'position-fixed bottom-0 end-0 m-4 alert alert-success shadow';
+  t.style.zIndex = 9999; t.innerHTML = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+</script>
+{% endblock %}

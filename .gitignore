@@ -1,0 +1,98 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+*.db
+db.sqlite3
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+*.pem
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Django migrations
+**/migrations/*.pyc
+**/migrations/__pycache__/
+**/migrations/*.py[cod]
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.stackdump
+
+# Node / React / Vite
+node_modules/
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.DS_Store
+/build/
+/dist/
+
+# Environment files
+.env
+.env.*
+*.env
+
+# Static assets
+frontend/dist/
+frontend/build/
+backend/staticfiles/
+
+# Logs and runtime files
+*.log
+*.log.*
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Python virtual environment
+backend/.venv
+frontend/.venv
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*,cover
+.cache
+nosetests.xml
+coverage_html_report/
+
+# JetBrains
+.idea/
+
+# Misc
+*.swp
+*~
+*.tmp
+*.temp
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local Django secret key
+secret_key.py

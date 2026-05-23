@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% block title %}My Orders — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0"><i class="fas fa-box text-primary me-2"></i>My Orders</h4>
+    <div class="d-flex gap-2">
+      <a href="/returns/my/" class="btn btn-outline-warning btn-sm">
+        <i class="fas fa-undo me-1"></i>My Returns
+      </a>
+      <a href="/user/dashboard/" class="btn btn-outline-secondary btn-sm">← Dashboard</a>
+    </div>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">
+    {{ msg }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  {% if orders %}
+  {% for order in orders %}
+  <div class="card shadow-sm mb-4 border-0" style="border-radius:12px;overflow:hidden;">
+
+    <!-- Order Header -->
+    <div class="card-header d-flex justify-content-between align-items-center py-3 bg-light">
+      <div>
+        <strong>#{{ order.order_id|stringformat:"s"|slice:":8"|upper }}</strong>
+        <span class="text-muted small ms-2">{{ order.order_date|date:"d M Y, g:i A" }}</span>
+        {% if order.is_bazar_member %}
+        <span class="badge ms-2" style="background:#FB641B;">⭐ Prime</span>
+        {% endif %}
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+        <span class="badge fs-6 px-3
+          {% if order.order_status == 'Delivered' %}bg-success
+          {% elif order.order_status == 'Cancelled' %}bg-danger
+          {% elif order.order_status == 'Shipped' %}bg-primary
+          {% elif order.order_status == 'Confirmed' %}bg-info
+          {% else %}bg-warning text-dark{% endif %}">
+          {{ order.order_status }}
+        </span>
+        <a href="/order/bill/{{ order.order_id }}/" class="btn btn-sm btn-outline-success">
+          <i class="fas fa-file-invoice me-1"></i>Invoice
+        </a>
+        <a href="/order/track/{{ order.order_id }}/" class="btn btn-sm btn-outline-primary">
+          <i class="fas fa-map-marker-alt me-1"></i>Track
+        </a>
+      </div>
+    </div>
+
+    <div class="card-body p-3">
+      {% for item in order.items.all %}
+      <div class="row align-items-center border-bottom pb-3 mb-3">
+
+        <!-- Product -->
+        <div class="col-md-4 d-flex gap-3 align-items-center">
+          {% if item.product.product_image %}
+          <img src="{{ item.product.product_image.url }}"
+               style="width:60px;height:60px;object-fit:cover;border-radius:8px;" alt="">
+          {% else %}
+          <div class="bg-light d-flex align-items-center justify-content-center"
+               style="width:60px;height:60px;border-radius:8px;">
+            <i class="fas fa-box text-muted"></i>
+          </div>
+          {% endif %}
+          <div>
+            <div class="fw-semibold small">{{ item.product.product_name|truncatechars:35 }}</div>
+            <div class="text-muted small">{{ item.product.category }}</div>
+            <div class="small mt-1">
+              <span class="badge bg-light text-dark border">Qty: {{ item.quantity }}</span>
+              <span class="fw-bold text-primary ms-2">₹{{ item.price_at_purchase }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Seller request status -->
+        <div class="col-md-4">
+          {% for req in item.seller_request.all %}
+          <div class="p-2 rounded" style="background:#f8f9fa;">
+            <div class="small text-muted fw-bold mb-1">🏪 {{ req.seller.name }}</div>
+            {% if req.status == 'pending' %}
+            <span class="badge bg-warning text-dark">⏳ Awaiting seller</span>
+            {% elif req.status == 'accepted' %}
+            <span class="badge bg-success">✅ Accepted — Preparing</span>
+            {% elif req.status == 'shipped' %}
+            <div>
+              <span class="badge bg-primary">🚚 Shipped</span>
+              <div class="small mt-1">Via <strong>{{ req.delivery_partner_name }}</strong></div>
+              <div class="small">Tracking: <span class="badge bg-dark font-monospace">{{ req.tracking_id }}</span></div>
+            </div>
+            {% elif req.status == 'delivered' %}
+            <span class="badge bg-success">📦 Delivered {{ req.delivered_at|date:"d M Y" }}</span>
+            {% elif req.status == 'rejected' %}
+            <div>
+              <span class="badge bg-danger">❌ Rejected</span>
+              <div class="small text-muted mt-1">{{ req.rejection_reason }}</div>
+            </div>
+            {% endif %}
+          </div>
+          {% empty %}
+          <span class="badge bg-secondary">Processing</span>
+          {% endfor %}
+        </div>
+
+        <!-- Return Button + Subtotal -->
+        <div class="col-md-4 text-end">
+          <div class="fw-bold text-primary fs-6">₹{{ item.subtotal }}</div>
+          <div class="text-muted small mb-2">{{ item.quantity }} × ₹{{ item.price_at_purchase }}</div>
+
+          {% if order.order_status == 'Delivered' %}
+            {% for req in item.seller_request.all %}
+              {% if req.status == 'delivered' %}
+                {% if item.return_requests.exists %}
+                  <span class="badge bg-warning text-dark">
+                    <i class="fas fa-undo me-1"></i>Return Raised
+                  </span>
+                {% else %}
+                  <a href="/order/return/{{ item.id }}/"
+                     class="btn btn-sm btn-outline-warning fw-semibold">
+                    <i class="fas fa-undo me-1"></i>Return / Refund
+                  </a>
+                {% endif %}
+              {% endif %}
+            {% empty %}
+              {% if item.return_requests.exists %}
+              <span class="badge bg-warning text-dark">
+                <i class="fas fa-undo me-1"></i>Return Raised
+              </span>
+              {% else %}
+              <a href="/order/return/{{ item.id }}/"
+                 class="btn btn-sm btn-outline-warning fw-semibold">
+                <i class="fas fa-undo me-1"></i>Return / Refund
+              </a>
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        </div>
+
+      </div>
+      {% endfor %}
+
+      <!-- Order Total -->
+      <div class="d-flex justify-content-between align-items-center pt-1">
+        <div class="small text-muted">
+          Payment: <strong>{{ order.payment_method }}</strong> —
+          <span class="badge {% if order.payment_status == 'Paid' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+            {{ order.payment_status }}
+          </span>
+        </div>
+        <div class="text-end">
+          <div class="text-muted small">
+            Subtotal: ₹{{ order.subtotal }}
+            + Delivery: {% if order.is_bazar_member %}<span class="text-success">FREE</span>{% else %}₹{{ order.delivery_charge }}{% endif %}
+            + Platform: {% if order.is_bazar_member %}<span class="text-success">₹0</span>{% else %}₹{{ order.platform_fee }}{% endif %}
+          </div>
+          <div class="fw-bold fs-5 text-primary">Total: ₹{{ order.total_amount }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  {% else %}
+  <div class="text-center py-5">
+    <i class="fas fa-shopping-bag fa-4x text-muted mb-3"></i>
+    <h5 class="text-muted">No orders yet</h5>
+    <p class="text-muted">Start shopping to see your orders here.</p>
+    <a href="/" class="btn btn-primary mt-2">Browse Products</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}Dynamic Pricing — Seller{% endblock %}
+{% block content %}
+<div class="container-fluid mt-3 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-0"><i class="fas fa-chart-line text-primary me-2"></i>Dynamic Pricing</h4>
+      <small class="text-muted">ML-powered price recommendations for your products</small>
+    </div>
+    <a href="/seller/dashboard/" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Dashboard</a>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-success alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="alert alert-info border-0 shadow-sm">
+    <i class="fas fa-robot me-2"></i>
+    <strong>How it works:</strong> Our ML engine analyses your product's stock level, demand trends, ratings, and time of day to recommend the optimal price. You decide whether to apply it.
+  </div>
+
+  <div class="row g-4">
+    {% for item in recommendations %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card shadow h-100 border-0">
+        <div class="card-header fw-bold bg-primary text-white">
+          <i class="fas fa-box me-2"></i>{{ item.product.product_name|truncatechars:30 }}
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted">Current Price</span>
+            <strong>₹{{ item.product.price }}</strong>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted">Recommended Price</span>
+            <strong class="text-success">₹{{ item.rec.suggested_price }}</strong>
+          </div>
+          <div class="d-flex justify-content-between mb-3">
+            <span class="text-muted">Adjustment</span>
+            <span class="badge {% if item.rec.change_pct > 0 %}bg-danger{% else %}bg-success{% endif %} fs-6">
+              {% if item.rec.change_pct > 0 %}+{% endif %}{{ item.rec.change_pct }}%
+            </span>
+          </div>
+          <div class="mb-3">
+            <p class="small text-muted mb-1"><strong>Reasons:</strong></p>
+            {% for reason in item.rec.reasons %}
+            <span class="badge bg-light text-dark border me-1 mb-1">{{ reason }}</span>
+            {% endfor %}
+          </div>
+          <form method="POST" action="/seller/dynamic-pricing/apply/{{ item.product.product_id }}/">
+            {% csrf_token %}
+            <div class="input-group">
+              <span class="input-group-text">₹</span>
+              <input type="number" name="new_price" class="form-control fw-bold"
+                     value="{{ item.rec.suggested_price }}" step="0.01" min="1">
+              <button type="submit" class="btn btn-success fw-bold">Apply</button>
+            </div>
+            <small class="text-muted">You can adjust the price before applying.</small>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+      <div class="text-center py-5 text-muted">
+        <i class="fas fa-box-open fa-3x mb-3"></i>
+        <h5>No products found or ML data not yet available.</h5>
+        <p>Add products and sales data to get pricing recommendations.</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

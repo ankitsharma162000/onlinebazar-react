@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}All Products — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold"><i class="fas fa-box text-info me-2"></i>All Products</h4>
+    <a href="/superadmin/dashboard/" class="btn btn-outline-secondary">← Dashboard</a>
+  </div>
+  <form method="GET" class="mb-3">
+    <div class="input-group" style="max-width:400px;">
+      <input type="text" name="q" class="form-control" placeholder="Search products..." value="{{ q }}"/>
+      <button class="btn btn-info text-white" type="submit"><i class="fas fa-search"></i></button>
+    </div>
+  </form>
+  <div class="card shadow">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-info">
+          <tr><th>Image</th><th>Product</th><th>Category</th><th>Seller</th><th>Price</th><th>Stock</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% for p in products %}
+          <tr>
+            <td>
+              {% if p.product_image %}
+              <img src="{{ p.product_image.url }}" style="width:50px;height:50px;object-fit:cover;" class="rounded" alt="{{ p.product_name }}"/>
+              {% else %}
+              <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width:50px;height:50px;"><i class="fas fa-box text-muted"></i></div>
+              {% endif %}
+            </td>
+            <td><strong>{{ p.product_name }}</strong><br/><small class="text-muted">ID: {{ p.product_id|stringformat:"s"|slice:":8" }}</small></td>
+            <td><span class="badge bg-secondary">{{ p.category }}</span></td>
+            <td>
+              {{ p.seller.name }}
+              {% if p.seller.is_blacklisted %}<span class="badge bg-danger ms-1">Blacklisted</span>{% endif %}
+            </td>
+            <td class="fw-bold text-primary">₹{{ p.price }}</td>
+            <td>
+              {% with sb=p.stock_badge %}
+              <span class="badge bg-{{ sb.2 }}">{{ sb.1 }}</span>
+              {% endwith %}
+            </td>
+            <td>
+              {% if p.is_active %}<span class="badge bg-success">Active</span>
+              {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center py-4 text-muted">No products found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <p class="text-muted mt-2 small">Total: {{ products|length }} product(s)</p>
+</div>
+{% endblock %}

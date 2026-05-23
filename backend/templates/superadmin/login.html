@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}SuperAdmin Login — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-5">
+      <div class="card shadow-lg border-warning">
+        <div class="card-header text-center py-3" style="background:linear-gradient(135deg,#1B3A6B,#2E5FA3);">
+          <h4 class="mb-0 text-warning"><i class="fas fa-crown me-2"></i>SuperAdmin Login</h4>
+          <small class="text-white">OnlineBazar — Admin Panel</small>
+        </div>
+        <div class="card-body p-4">
+          {% for msg in messages %}
+          <div class="alert alert-{{ msg.tags }} py-2">{{ msg }}</div>
+          {% endfor %}
+          <form method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Admin Email</label>
+              <input type="email" name="email" class="form-control" placeholder="Enter admin email" required/>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Password</label>
+              <input type="password" name="password" class="form-control" placeholder="Enter password" required/>
+            </div>
+            <button type="submit" class="btn btn-warning w-100 fw-bold btn-lg text-dark">
+              <i class="fas fa-crown me-2"></i>Login as SuperAdmin
+            </button>
+          </form>
+          <hr/>
+          <p class="text-center small"><a href="/user/login/" class="text-muted">User Login</a> | <a href="/seller/login/" class="text-muted">Seller Login</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block title %}Compare Products — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container py-4">
+
+  <div class="d-flex align-items-center mb-4 gap-3">
+    <h4 class="fw-bold mb-0"><i class="fas fa-balance-scale text-primary me-2"></i>Compare Products</h4>
+    <span class="badge bg-primary">{{ products|length }}/3 selected</span>
+  </div>
+
+  <!-- Add product selector -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        {% for p in products %}
+        <input type="hidden" name="ids" value="{{ p.product_id }}">
+        {% endfor %}
+        <div class="col-md-8">
+          <label class="form-label small fw-semibold">Add a product to compare</label>
+          <select name="ids" class="form-select">
+            <option value="">-- Select product --</option>
+            {% for p in all_products %}
+            <option value="{{ p.product_id }}">{{ p.product_name }} — ₹{{ p.price }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="fas fa-plus me-1"></i> Add
+          </button>
+        </div>
+        <div class="col-md-2">
+          <a href="/compare/" class="btn btn-outline-secondary w-100">
+            <i class="fas fa-redo me-1"></i> Clear All
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if products %}
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-bordered mb-0">
+          <thead>
+            <tr class="table-primary">
+              <th style="width:160px;" class="align-middle">Feature</th>
+              {% for p in products %}
+              <th class="text-center">
+                <a href="/product/{{ p.product_id }}/" class="text-decoration-none text-dark">
+                  {% if p.product_image %}
+                  <img src="{{ p.product_image.url }}" style="height:100px;object-fit:contain;" class="d-block mx-auto mb-2">
+                  {% endif %}
+                  <div class="fw-bold">{{ p.product_name }}</div>
+                </a>
+                <a href="/compare/?{% for op in products %}{% if op.product_id != p.product_id %}ids={{ op.product_id }}&{% endif %}{% endfor %}" class="btn btn-sm btn-outline-danger mt-1">
+                  <i class="fas fa-times"></i> Remove
+                </a>
+              </th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="fw-semibold bg-light">💰 Price</td>
+              {% for p in products %}
+              <td class="text-center">
+                <span class="fw-bold fs-5 text-primary">₹{{ p.price }}</span>
+                {% if forloop.first %}
+                <br><span class="badge bg-success">Lowest</span>
+                {% endif %}
+              </td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <td class="fw-semibold bg-light">📦 Category</td>
+              {% for p in products %}<td class="text-center">{{ p.category }}</td>{% endfor %}
+            </tr>
+            <tr>
+              <td class="fw-semibold bg-light">⭐ Rating</td>
+              {% for p in products %}
+              <td class="text-center">
+                <span class="text-warning">{% for i in "12345" %}{% if forloop.counter <= p.average_rating %}★{% else %}☆{% endif %}{% endfor %}</span>
+                <br><small class="text-muted">{{ p.average_rating }}/5 ({{ p.review_count }} reviews)</small>
+              </td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <td class="fw-semibold bg-light">📊 Stock</td>
+              {% for p in products %}
+              <td class="text-center">
+                <span class="badge bg-{{ p.stock_badge.2 }}">{{ p.stock_badge.1 }}</span>
+              </td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <td class="fw-semibold bg-light">🏪 Seller</td>
+              {% for p in products %}<td class="text-center small">{{ p.seller.name }}</td>{% endfor %}
+            </tr>
+            <tr>
+              <td class="fw-semibold bg-light">📝 Description</td>
+              {% for p in products %}<td class="small">{{ p.description|truncatechars:120 }}</td>{% endfor %}
+            </tr>
+            <tr class="table-light">
+              <td class="fw-semibold">🛒 Action</td>
+              {% for p in products %}
+              <td class="text-center">
+                {% if p.stock_quantity > 0 %}
+                <a href="/cart/add/{{ p.product_id }}/" class="btn btn-primary btn-sm">
+                  <i class="fas fa-cart-plus me-1"></i> Add to Cart
+                </a>
+                {% else %}
+                <button class="btn btn-secondary btn-sm" disabled>Out of Stock</button>
+                {% endif %}
+              </td>
+              {% endfor %}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="text-center py-5">
+    <i class="fas fa-balance-scale fa-4x text-muted mb-3"></i>
+    <h5 class="text-muted">Select products above to compare</h5>
+    <p class="text-muted">You can compare up to 3 products side by side</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

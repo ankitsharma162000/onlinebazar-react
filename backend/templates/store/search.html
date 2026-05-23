@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}Search — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container py-4">
+
+  <!-- Search Bar -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <form method="get" action="/search/">
+        <div class="row g-2">
+          <div class="col-md-4">
+            <input type="text" name="q" class="form-control" placeholder="🔍 Search products..." value="{{ query }}">
+          </div>
+          <div class="col-md-2">
+            <select name="category" class="form-select">
+              <option value="">All Categories</option>
+              {% for val, label in all_categories %}
+              <option value="{{ val }}" {% if category == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-1">
+            <input type="number" name="min_price" class="form-control" placeholder="Min ₹" value="{{ min_price }}">
+          </div>
+          <div class="col-md-1">
+            <input type="number" name="max_price" class="form-control" placeholder="Max ₹" value="{{ max_price }}">
+          </div>
+          <div class="col-md-2">
+            <select name="min_rating" class="form-select">
+              <option value="">Any Rating</option>
+              <option value="4" {% if min_rating == '4' %}selected{% endif %}>4★ & above</option>
+              <option value="3" {% if min_rating == '3' %}selected{% endif %}>3★ & above</option>
+              <option value="2" {% if min_rating == '2' %}selected{% endif %}>2★ & above</option>
+            </select>
+          </div>
+          <div class="col-md-1">
+            <select name="sort" class="form-select">
+              <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>Newest</option>
+              <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>Price ↑</option>
+              <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>Price ↓</option>
+              <option value="name" {% if sort_by == 'name' %}selected{% endif %}>A-Z</option>
+            </select>
+          </div>
+          <div class="col-md-1">
+            <button type="submit" class="btn btn-primary w-100">Search</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Results Header -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h6 class="fw-bold mb-0">
+      {% if query %}Results for "<span class="text-primary">{{ query }}</span>"{% else %}All Products{% endif %}
+      <span class="badge bg-secondary ms-2">{{ result_count }} found</span>
+    </h6>
+    <a href="/compare/" class="btn btn-outline-primary btn-sm">
+      <i class="fas fa-balance-scale me-1"></i> Compare Products
+    </a>
+  </div>
+
+  <!-- Products Grid -->
+  {% if products %}
+  <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+    {% for p in products %}
+    <div class="col">
+      <div class="card h-100 shadow-sm product-card">
+        <a href="/product/{{ p.product_id }}/">
+          {% if p.product_image %}
+          <img src="{{ p.product_image.url }}" class="card-img-top" style="height:180px;object-fit:cover;" alt="{{ p.product_name }}"/>
+          {% else %}
+          <div class="bg-light d-flex align-items-center justify-content-center" style="height:180px;">
+            <i class="fas fa-box fa-3x text-muted"></i>
+          </div>
+          {% endif %}
+        </a>
+        <div class="card-body p-2">
+          <span class="badge bg-secondary small">{{ p.category }}</span>
+          <h6 class="card-title mt-1 mb-1 fw-semibold text-truncate">{{ p.product_name }}</h6>
+          <div class="text-warning small mb-1">
+            {% for i in "12345" %}{% if forloop.counter <= p.average_rating %}★{% else %}☆{% endif %}{% endfor %}
+            <span class="text-muted">({{ p.review_count }})</span>
+          </div>
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="text-primary fw-bold fs-6">₹{{ p.price }}</span>
+            <span class="badge bg-{{ p.stock_badge.2 }} small">{{ p.stock_badge.1 }}</span>
+          </div>
+        </div>
+        <div class="card-footer p-2 bg-white border-0">
+          <div class="d-flex gap-1">
+            {% if p.stock_quantity > 0 %}
+            <a href="/cart/add/{{ p.product_id }}/" class="btn btn-primary btn-sm flex-grow-1">
+              <i class="fas fa-cart-plus"></i> Cart
+            </a>
+            {% else %}
+            <button class="btn btn-secondary btn-sm flex-grow-1" disabled>Out of Stock</button>
+            {% endif %}
+            <a href="/compare/?ids={{ p.product_id }}" class="btn btn-outline-primary btn-sm" title="Compare">
+              <i class="fas fa-balance-scale"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <i class="fas fa-search fa-4x text-muted mb-3"></i>
+    <h5 class="text-muted">No products found</h5>
+    <p class="text-muted">Try different keywords or remove filters</p>
+    <a href="/search/" class="btn btn-primary mt-2">Clear Filters</a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

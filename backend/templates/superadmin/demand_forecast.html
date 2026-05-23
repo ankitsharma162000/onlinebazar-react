@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% block title %}Demand Forecast & Insights — OnlineBazar Admin{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="fw-bold mb-0"><i class="fas fa-chart-line text-primary me-2"></i>Demand Forecast & Business Insights</h3>
+      <small class="text-muted">ML-powered predictions based on order history</small>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="/superadmin/sales-report/pdf/" class="btn btn-danger">
+        <i class="fas fa-file-pdf me-1"></i> Download PDF Report
+      </a>
+      <span class="badge bg-warning text-dark fs-6">{{ low_stock_count }} Low Stock</span>
+    </div>
+  </div>
+
+  <!-- Top Forecast Cards -->
+  <div class="row g-3 mb-4">
+    {% for item in forecast|slice:":4" %}
+    <div class="col-md-3">
+      <div class="card kpi-card shadow-sm h-100 border-0">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <p class="text-muted small mb-1">{{ item.category }}</p>
+              <h4 class="fw-bold mb-0">{{ item.predicted_next }} <small class="fs-6 text-muted">units</small></h4>
+              <small class="text-muted">Predicted next month</small>
+            </div>
+            <span class="badge {% if item.trend == 'up' %}bg-success{% else %}bg-danger{% endif %} fs-6">
+              {% if item.trend == 'up' %}↑{% else %}↓{% endif %} {{ item.growth_pct }}%
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Demand Chart -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between">
+          <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>6-Month Sales Trend by Category</h6>
+          <select class="form-select form-select-sm w-auto" id="cat-select" onchange="updateChart()">
+            {% for item in forecast %}
+            <option value="{{ forloop.counter0 }}">{{ item.category }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="card-body">
+          <canvas id="demandChart" height="100"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Low Stock Alerts -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-warning text-dark">
+          <h6 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>⚠️ Low Stock Alerts</h6>
+        </div>
+        <div class="card-body p-0" style="max-height:350px;overflow-y:auto;">
+          {% if low_stock %}
+          <div class="list-group list-group-flush">
+            {% for p in low_stock %}
+            <div class="list-group-item d-flex justify-content-between align-items-center px-3 py-2">
+              <div>
+                <p class="mb-0 fw-semibold small">{{ p.product_name|truncatechars:30 }}</p>
+                <small class="text-muted">{{ p.category }} • {{ p.seller.name }}</small>
+              </div>
+              <span class="badge {% if p.stock_quantity == 0 %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                {{ p.stock_quantity }} left
+              </span>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-center py-4">
+            <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+            <p class="text-muted small">All products well stocked!</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Seller Rankings -->
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white d-flex justify-content-between">
+          <h6 class="mb-0"><i class="fas fa-trophy me-2"></i>🏆 Seller Performance Rankings</h6>
+          <small class="text-muted">Ranked by revenue + orders + ratings</small>
+        </div>
+        <div class="card-body p-0">
+          {% if rankings %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-dark">
+                <tr>
+                  <th>Rank</th>
+                  <th>Seller</th>
+                  <th>Business</th>
+                  <th>Total Orders</th>
+                  <th>Revenue</th>
+                  <th>Avg Rating</th>
+                  <th>Score</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in rankings %}
+                <tr>
+                  <td>
+                    {% if r.rank == 1 %}<span class="fs-5">🥇</span>
+                    {% elif r.rank == 2 %}<span class="fs-5">🥈</span>
+                    {% elif r.rank == 3 %}<span class="fs-5">🥉</span>
+                    {% else %}<span class="badge bg-secondary">#{{ r.rank }}</span>{% endif %}
+                  </td>
+                  <td class="fw-semibold">{{ r.seller.full_name }}</td>
+                  <td>{{ r.seller.name }}</td>
+                  <td><span class="badge bg-primary">{{ r.orders }}</span></td>
+                  <td class="fw-bold text-success">₹{{ r.revenue|floatformat:2 }}</td>
+                  <td>
+                    <span class="text-warning">★</span> {{ r.avg_rating }}/5
+                  </td>
+                  <td><span class="badge bg-info text-dark">{{ r.score|floatformat:0 }}</span></td>
+                  <td>
+                    {% if r.seller.is_blacklisted %}
+                    <span class="badge bg-danger">Blacklisted</span>
+                    {% else %}
+                    <span class="badge bg-success">Active</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5">
+            <i class="fas fa-store fa-3x text-muted mb-3"></i>
+            <p class="text-muted">No seller data available yet.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const forecastData = {{ forecast_json|safe }};
+
+function updateChart() {
+  const idx  = parseInt(document.getElementById('cat-select').value);
+  const item = forecastData[idx];
+  chart.data.labels = item.months;
+  chart.data.datasets[0].data = item.history;
+  chart.data.datasets[1].data = [...item.history.slice(0,-1), item.history[item.history.length-1], item.predicted_next];
+  chart.options.plugins.title.text = item.category + ' — Demand Trend';
+  chart.update();
+}
+
+const ctx = document.getElementById('demandChart').getContext('2d');
+const first = forecastData[0] || {months:[], history:[], predicted_next:0, category:''};
+const chart = new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: first.months,
+    datasets: [
+      {
+        label: 'Actual Sales',
+        data: first.history,
+        backgroundColor: 'rgba(40,116,240,0.7)',
+        borderColor: '#2874F0',
+        borderWidth: 1,
+        borderRadius: 4,
+      },
+      {
+        label: 'Forecast',
+        data: [...(first.history||[]).slice(0,-1), (first.history||[])[(first.history||[]).length-1], first.predicted_next],
+        type: 'line',
+        borderColor: '#FB641B',
+        backgroundColor: 'rgba(251,100,27,0.1)',
+        borderWidth: 2,
+        borderDash: [6,3],
+        pointBackgroundColor: '#FB641B',
+        tension: 0.3,
+        fill: true,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      title: { display: true, text: first.category + ' — Demand Trend', font: {size:14} },
+      legend: { position: 'top' }
+    },
+    scales: {
+      y: { beginAtZero: true, title: { display: true, text: 'Units' } }
+    }
+  }
+});
+</script>
+{% endblock %}

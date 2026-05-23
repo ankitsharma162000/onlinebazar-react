@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% block title %}Bazar Prime Membership — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container py-5">
+
+  <!-- Hero -->
+  <div class="text-center mb-5">
+    <div style="font-size:56px;">⭐</div>
+    <h2 class="fw-bold" style="color:#FB641B;">Bazar Prime Membership</h2>
+    <p class="text-muted fs-5">Shop smarter. Save more. Deliver free.</p>
+  </div>
+
+  <!-- Current Status -->
+  {% if is_member %}
+  <div class="card border-0 shadow-lg mb-5 mx-auto" style="max-width:600px;background:linear-gradient(135deg,#1a1a2e,#2874F0);border-radius:20px;">
+    <div class="card-body text-white p-4 text-center">
+      <div class="mb-2" style="font-size:48px;">⭐</div>
+      <h4 class="fw-bold">You're a Bazar Prime Member!</h4>
+      <p class="mb-1 opacity-75">Plan: <strong>{{ membership.get_plan_display }}</strong></p>
+      <p class="mb-1 opacity-75">Valid until: <strong>{{ membership.end_date|date:"d M Y" }}</strong></p>
+      <div class="badge bg-warning text-dark fs-6 px-3 py-2 mt-2">
+        {{ membership.days_remaining }} days remaining
+      </div>
+      <hr class="border-light my-3">
+      <form method="post" action="/user/membership/cancel/" onsubmit="return confirm('Cancel membership? Benefits stay until expiry.')">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-light btn-sm">Cancel Auto-Renew</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Benefits Grid -->
+  <div class="row g-4 mb-5">
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm text-center p-4">
+        <div style="font-size:40px;">🚚</div>
+        <h5 class="fw-bold mt-2">Free Delivery</h5>
+        <p class="text-muted small">On every order, no minimum. Non-members pay ₹50 on orders below ₹500.</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm text-center p-4">
+        <div style="font-size:40px;">🏷️</div>
+        <h5 class="fw-bold mt-2">Exclusive Discounts</h5>
+        <p class="text-muted small">Early access to sales & member-only offers. More savings every day.</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm text-center p-4">
+        <div style="font-size:40px;">🏢</div>
+        <h5 class="fw-bold mt-2">No Platform Fee</h5>
+        <p class="text-muted small">Save ₹5 on every order. Non-members pay ₹5 platform fee always.</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm text-center p-4">
+        <div style="font-size:40px;">⚡</div>
+        <h5 class="fw-bold mt-2">Early Sale Access</h5>
+        <p class="text-muted small">Shop flash sales 2 hours before everyone else. Best products first.</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm text-center p-4">
+        <div style="font-size:40px;">🎯</div>
+        <h5 class="fw-bold mt-2">Priority Support</h5>
+        <p class="text-muted small">Your support tickets get resolved first. Dedicated member helpline.</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm text-center p-4">
+        <div style="font-size:40px;">🎁</div>
+        <h5 class="fw-bold mt-2">Birthday Offers</h5>
+        <p class="text-muted small">Special discount coupon on your birthday. Our gift to prime members.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pricing Plans -->
+  {% if not is_member %}
+  <h3 class="text-center fw-bold mb-4">Choose Your Plan</h3>
+  <div class="row justify-content-center g-4 mb-5">
+
+    <!-- Monthly Plan -->
+    <div class="col-md-4">
+      <div class="card border-2 border-primary shadow-sm h-100" style="border-radius:16px;">
+        <div class="card-header bg-primary text-white text-center py-3" style="border-radius:14px 14px 0 0;">
+          <h5 class="mb-0 fw-bold">Monthly Plan</h5>
+        </div>
+        <div class="card-body text-center p-4">
+          <div class="display-4 fw-bold text-primary">₹199</div>
+          <div class="text-muted mb-3">per month</div>
+          <ul class="list-unstyled text-start">
+            <li class="mb-2">✅ Free delivery on all orders</li>
+            <li class="mb-2">✅ No platform fee</li>
+            <li class="mb-2">✅ Exclusive member discounts</li>
+            <li class="mb-2">✅ Early sale access</li>
+            <li class="mb-2">✅ Priority customer support</li>
+          </ul>
+          <form method="post" action="/user/membership/join/">
+            {% csrf_token %}
+            <input type="hidden" name="plan" value="monthly">
+            <button type="submit" class="btn btn-primary w-100 fw-bold btn-lg mt-2">
+              Join Monthly — ₹199
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Yearly Plan — Recommended -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-lg h-100 position-relative" style="border-radius:16px;background:linear-gradient(135deg,#1a1a2e,#2874F0);">
+        <div class="position-absolute top-0 start-50 translate-middle">
+          <span class="badge px-3 py-2 fw-bold" style="background:#FB641B;font-size:13px;border-radius:20px;">⭐ BEST VALUE</span>
+        </div>
+        <div class="card-header text-white text-center py-3 border-0" style="background:transparent;">
+          <h5 class="mb-0 fw-bold text-white mt-2">Yearly Plan</h5>
+        </div>
+        <div class="card-body text-center p-4">
+          <div class="display-4 fw-bold text-white">₹999</div>
+          <div class="text-white-50 mb-1">per year</div>
+          <div class="badge bg-success mb-3">Save ₹1,389 vs monthly!</div>
+          <ul class="list-unstyled text-start text-white">
+            <li class="mb-2">✅ Free delivery on all orders</li>
+            <li class="mb-2">✅ No platform fee</li>
+            <li class="mb-2">✅ Exclusive member discounts</li>
+            <li class="mb-2">✅ Early sale access</li>
+            <li class="mb-2">✅ Priority support</li>
+            <li class="mb-2">🎁 Birthday special offer</li>
+            <li class="mb-2">⚡ Flash sale early access</li>
+          </ul>
+          <form method="post" action="/user/membership/join/">
+            {% csrf_token %}
+            <input type="hidden" name="plan" value="yearly">
+            <button type="submit" class="btn btn-warning w-100 fw-bold btn-lg mt-2" style="color:#1a1a2e;">
+              Join Yearly — ₹999 ⭐
+            </button>
+          </form>
+          <small class="text-white-50 d-block mt-2">Only ₹83/month!</small>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Comparison Table -->
+  <div class="card shadow-sm mb-5 mx-auto" style="max-width:700px;">
+    <div class="card-header bg-dark text-white fw-bold text-center">Member vs Non-Member Comparison</div>
+    <div class="table-responsive">
+      <table class="table table-bordered mb-0">
+        <thead class="table-primary">
+          <tr>
+            <th>Feature</th>
+            <th class="text-center">⭐ Bazar Prime</th>
+            <th class="text-center">Regular User</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Delivery Charges</td>
+            <td class="text-center text-success fw-bold">FREE always</td>
+            <td class="text-center text-danger">₹50 (orders &lt; ₹500)</td>
+          </tr>
+          <tr class="table-light">
+            <td>Platform Fee</td>
+            <td class="text-center text-success fw-bold">₹0</td>
+            <td class="text-center text-danger">₹5 per order</td>
+          </tr>
+          <tr>
+            <td>Sale Access</td>
+            <td class="text-center text-success fw-bold">2 hrs early</td>
+            <td class="text-center text-muted">Regular time</td>
+          </tr>
+          <tr class="table-light">
+            <td>Member Discounts</td>
+            <td class="text-center text-success fw-bold">✅ Yes</td>
+            <td class="text-center text-muted">❌ No</td>
+          </tr>
+          <tr>
+            <td>Support Priority</td>
+            <td class="text-center text-success fw-bold">⚡ Priority</td>
+            <td class="text-center text-muted">Standard</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

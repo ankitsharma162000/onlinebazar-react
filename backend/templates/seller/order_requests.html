@@ -1,0 +1,389 @@
+{% extends 'base.html' %}
+{% load seller_filters %}
+{% block title %}Order Requests — {{ seller.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="fw-bold mb-0"><i class="fas fa-inbox text-primary me-2"></i>Order Requests</h3>
+      <small class="text-muted">Accept or reject orders from customers — then choose delivery partner</small>
+    </div>
+    <a href="/seller/dashboard/" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Dashboard
+    </a>
+  </div>
+
+  <!-- Status Filter Tabs -->
+  <div class="d-flex gap-2 mb-4 flex-wrap">
+    {% for key, label in request_statuses %}
+    <a href="?status={{ key }}"
+       class="btn btn-sm {% if status_filter == key %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+      {{ label }}
+      <span class="badge {% if status_filter == key %}bg-white text-primary{% else %}bg-primary{% endif %} ms-1">
+        {{ counts|get_item:key }}
+      </span>
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Pending Alert -->
+  {% if counts.pending > 0 %}
+  <div class="alert alert-warning border-0 shadow-sm mb-4 d-flex align-items-center gap-3">
+    <span style="font-size:28px;">🔔</span>
+    <div>
+      <strong>{{ counts.pending }} new order request{{ counts.pending|pluralize }}!</strong>
+      Please accept or reject within 24 hours. Unresponded orders may be auto-cancelled.
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Order Request Cards -->
+  {% if requests %}
+    {% for req in requests %}
+    <div class="card shadow-sm mb-4 border-0" id="req-{{ req.id }}" style="border-radius:12px;overflow:hidden;">
+
+      <!-- Card Header -->
+      <div class="card-header d-flex justify-content-between align-items-center py-3"
+           style="background:{% if req.status == 'pending' %}#fff8e1{% elif req.status == 'accepted' %}#e8f5e9{% elif req.status == 'shipped' %}#e3f2fd{% elif req.status == 'delivered' %}#f3e5f5{% elif req.status == 'rejected' %}#ffebee{% else %}#f5f5f5{% endif %};">
+        <div class="d-flex align-items-center gap-3">
+          <div>
+            <span class="fw-bold text-dark">Order #{{ req.order.order_id|stringformat:"s"|slice:":8"|upper }}</span>
+            <span class="text-muted small ms-2">{{ req.created_at|date:"d M Y, g:i A" }}</span>
+          </div>
+          <span class="badge fs-6 px-3 py-2
+            {% if req.status == 'pending' %}bg-warning text-dark
+            {% elif req.status == 'accepted' %}bg-success
+            {% elif req.status == 'shipped' %}bg-primary
+            {% elif req.status == 'delivered' %}bg-purple
+            {% elif req.status == 'rejected' %}bg-danger
+            {% endif %}">
+            {% if req.status == 'pending' %}⏳ Pending Action
+            {% elif req.status == 'accepted' %}✅ Accepted
+            {% elif req.status == 'shipped' %}🚚 Shipped
+            {% elif req.status == 'delivered' %}📦 Delivered
+            {% elif req.status == 'rejected' %}❌ Rejected
+            {% endif %}
+          </span>
+        </div>
+        <div class="text-muted small">
+          {% if req.status == 'pending' %}
+          <span class="text-warning fw-bold">⚠️ Action Required</span>
+          {% elif req.status == 'accepted' %}
+          <span class="text-success">Accepted {{ req.accepted_at|date:"d M, g:i A" }}</span>
+          {% elif req.status == 'shipped' %}
+          <span class="text-primary">Shipped {{ req.shipped_at|date:"d M, g:i A" }}</span>
+          {% elif req.status == 'delivered' %}
+          <span class="text-success">Delivered {{ req.delivered_at|date:"d M, g:i A" }}</span>
+          {% elif req.status == 'rejected' %}
+          <span class="text-danger">Rejected</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card-body p-4">
+        <div class="row g-4">
+
+          <!-- Product Info -->
+          <div class="col-md-4">
+            <h6 class="fw-bold text-muted small text-uppercase mb-2">📦 Product</h6>
+            <div class="d-flex gap-3 align-items-center">
+              {% if req.order_item.product.product_image %}
+              <img src="{{ req.order_item.product.product_image.url }}"
+                   style="width:70px;height:70px;object-fit:cover;border-radius:8px;" alt="">
+              {% else %}
+              <div class="bg-light d-flex align-items-center justify-content-center"
+                   style="width:70px;height:70px;border-radius:8px;">
+                <i class="fas fa-box fa-2x text-muted"></i>
+              </div>
+              {% endif %}
+              <div>
+                <div class="fw-semibold">{{ req.order_item.product.product_name }}</div>
+                <div class="text-muted small">{{ req.order_item.product.category }}</div>
+                <div class="mt-1">
+                  <span class="badge bg-light text-dark border">Qty: {{ req.order_item.quantity }}</span>
+                  <span class="fw-bold text-primary ms-2">₹{{ req.order_item.price_at_purchase }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Customer Info -->
+          <div class="col-md-3">
+            <h6 class="fw-bold text-muted small text-uppercase mb-2">👤 Customer</h6>
+            <div class="fw-semibold">{{ req.order.user.name }}</div>
+            <div class="text-muted small">📞 {{ req.order.user.phone_number }}</div>
+            <div class="text-muted small mt-1">📍 {{ req.order.delivery_address|truncatechars:60 }}</div>
+            <div class="mt-1">
+              {% if req.order.is_bazar_member %}
+              <span class="badge" style="background:#FB641B;">⭐ Bazar Prime</span>
+              {% endif %}
+              <span class="badge bg-info ms-1">{{ req.order.payment_method }}</span>
+            </div>
+          </div>
+
+          <!-- Delivery Info (if shipped) -->
+          <div class="col-md-3">
+            <h6 class="fw-bold text-muted small text-uppercase mb-2">🚚 Delivery</h6>
+            {% if req.status == 'shipped' or req.status == 'delivered' %}
+            <div class="fw-semibold text-primary">{{ req.delivery_partner_name }}</div>
+            <div class="text-muted small mt-1">Tracking ID:</div>
+            <div class="badge bg-dark px-2 py-1 font-monospace mt-1">{{ req.tracking_id }}</div>
+            {% elif req.status == 'rejected' %}
+            <div class="text-danger small">
+              <strong>Reason:</strong> {{ req.rejection_reason }}
+            </div>
+            {% else %}
+            <div class="text-muted small">Not shipped yet</div>
+            {% endif %}
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="col-md-2 d-flex flex-column gap-2 justify-content-center">
+
+            {% if req.status == 'pending' %}
+            <!-- Accept -->
+            <button class="btn btn-success fw-bold"
+                    onclick="acceptRequest('{{ req.id }}')">
+              <i class="fas fa-check me-1"></i> Accept
+            </button>
+            <!-- Reject -->
+            <button class="btn btn-outline-danger fw-bold"
+                    onclick="showRejectModal('{{ req.id }}')">
+              <i class="fas fa-times me-1"></i> Reject
+            </button>
+
+            {% elif req.status == 'accepted' %}
+            <!-- Choose Delivery Partner & Ship -->
+            <button class="btn btn-primary fw-bold"
+                    onclick="showShipModal('{{ req.id }}')">
+              <i class="fas fa-truck me-1"></i> Ship Now
+            </button>
+
+            {% elif req.status == 'shipped' %}
+            <!-- Mark Delivered -->
+            <button class="btn btn-success fw-bold"
+                    onclick="markDelivered('{{ req.id }}')">
+              <i class="fas fa-check-double me-1"></i> Mark Delivered
+            </button>
+            <div class="text-muted small text-center">Awaiting delivery confirmation</div>
+
+            {% elif req.status == 'delivered' %}
+            <div class="text-center text-success">
+              <i class="fas fa-check-circle fa-2x"></i>
+              <div class="small fw-bold mt-1">Completed!</div>
+            </div>
+
+            {% elif req.status == 'rejected' %}
+            <div class="text-center text-danger">
+              <i class="fas fa-times-circle fa-2x"></i>
+              <div class="small fw-bold mt-1">Rejected</div>
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+
+  {% else %}
+  <div class="text-center py-5">
+    <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+    <h5 class="text-muted">No order requests
+      {% if status_filter != 'all' %}with status "{{ status_filter }}"{% endif %}
+    </h5>
+    <p class="text-muted">Orders from customers will appear here.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- ── Reject Modal ── -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h6 class="modal-title"><i class="fas fa-times me-2"></i>Reject Order</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label fw-semibold small">Reason for rejection:</label>
+        <select class="form-select mb-2" id="reject-reason-select" onchange="updateRejectReason()">
+          <option value="">-- Select reason --</option>
+          <option value="Product out of stock">Product out of stock</option>
+          <option value="Cannot deliver to this location">Cannot deliver to this location</option>
+          <option value="Order price issue">Order price issue</option>
+          <option value="Product damaged/unavailable">Product damaged/unavailable</option>
+          <option value="Other">Other reason</option>
+        </select>
+        <textarea class="form-control" id="reject-reason" rows="3"
+                  placeholder="Describe why you are rejecting..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger w-100 fw-bold" onclick="rejectRequest()">
+          <i class="fas fa-times me-1"></i> Confirm Rejection
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Ship Modal ── -->
+<div class="modal fade" id="shipModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h6 class="modal-title"><i class="fas fa-truck me-2"></i>Choose Delivery Partner & Ship</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-3">Select a delivery partner to ship this order:</p>
+        <div class="row g-3" id="partner-grid">
+          {% for key, name in delivery_partners %}
+          <div class="col-6">
+            <div class="card border-2 p-3 text-center partner-card" style="cursor:pointer;border-radius:10px;"
+                 onclick="selectPartner('{{ key }}', this)">
+              <div style="font-size:28px;">
+                {% if key == 'bluedart' %}🔵
+                {% elif key == 'delhivery' %}🟠
+                {% elif key == 'dtdc' %}🔴
+                {% elif key == 'ecom' %}🟢
+                {% elif key == 'xpressbees' %}🟡
+                {% elif key == 'shadowfax' %}⚫
+                {% endif %}
+              </div>
+              <div class="fw-semibold mt-1 small">{{ name }}</div>
+              <input type="radio" name="delivery_partner" value="{{ key }}" class="d-none">
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div id="selected-partner-display" class="alert alert-success mt-3 d-none">
+          <strong>Selected:</strong> <span id="selected-partner-name"></span>
+          <br><small class="text-muted">A tracking ID will be auto-generated.</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary w-100 fw-bold btn-lg" id="ship-btn"
+                onclick="shipOrder()" disabled>
+          <i class="fas fa-truck me-2"></i>Confirm & Ship
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+let activeReqId  = null;
+let selectedPartner = null;
+
+// ── Accept ──
+async function acceptRequest(reqId) {
+  if (!confirm('Accept this order request?')) return;
+  const res = await fetch(`/seller/order-requests/accept/${reqId}/`, {
+    method: 'POST', headers: {'X-CSRFToken': CSRF}
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast('✅ ' + data.message, 'success');
+    setTimeout(() => location.reload(), 1200);
+  } else showToast('❌ ' + data.error, 'danger');
+}
+
+// ── Reject Modal ──
+function showRejectModal(reqId) {
+  activeReqId = reqId;
+  document.getElementById('reject-reason').value = '';
+  document.getElementById('reject-reason-select').value = '';
+  new bootstrap.Modal(document.getElementById('rejectModal')).show();
+}
+function updateRejectReason() {
+  const sel = document.getElementById('reject-reason-select').value;
+  if (sel && sel !== 'Other') document.getElementById('reject-reason').value = sel;
+}
+async function rejectRequest() {
+  const reason = document.getElementById('reject-reason').value.trim();
+  if (!reason) { alert('Please enter a reason.'); return; }
+  const res = await fetch(`/seller/order-requests/reject/${activeReqId}/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+    body: JSON.stringify({reason})
+  });
+  const data = await res.json();
+  bootstrap.Modal.getInstance(document.getElementById('rejectModal')).hide();
+  if (data.success) {
+    showToast('❌ ' + data.message, 'warning');
+    setTimeout(() => location.reload(), 1200);
+  } else showToast('Error: ' + data.error, 'danger');
+}
+
+// ── Ship Modal ──
+function showShipModal(reqId) {
+  activeReqId = reqId;
+  selectedPartner = null;
+  document.querySelectorAll('.partner-card').forEach(c => {
+    c.classList.remove('border-primary', 'bg-primary', 'bg-opacity-10');
+  });
+  document.getElementById('selected-partner-display').classList.add('d-none');
+  document.getElementById('ship-btn').disabled = true;
+  new bootstrap.Modal(document.getElementById('shipModal')).show();
+}
+function selectPartner(key, el) {
+  document.querySelectorAll('.partner-card').forEach(c => {
+    c.classList.remove('border-primary', 'bg-primary', 'bg-opacity-10');
+  });
+  el.classList.add('border-primary', 'bg-primary', 'bg-opacity-10');
+  el.querySelector('input').checked = true;
+  selectedPartner = key;
+  const name = el.querySelector('.fw-semibold').textContent;
+  document.getElementById('selected-partner-name').textContent = name;
+  document.getElementById('selected-partner-display').classList.remove('d-none');
+  document.getElementById('ship-btn').disabled = false;
+}
+async function shipOrder() {
+  if (!selectedPartner) { alert('Select a delivery partner!'); return; }
+  const btn = document.getElementById('ship-btn');
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Shipping...';
+  const res = await fetch(`/seller/order-requests/ship/${activeReqId}/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+    body: JSON.stringify({delivery_partner: selectedPartner})
+  });
+  const data = await res.json();
+  bootstrap.Modal.getInstance(document.getElementById('shipModal')).hide();
+  if (data.success) {
+    showToast(`🚚 ${data.message} Tracking: ${data.tracking_id}`, 'success');
+    setTimeout(() => location.reload(), 2000);
+  } else {
+    showToast('❌ ' + data.error, 'danger');
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-truck me-2"></i>Confirm & Ship';
+  }
+}
+
+// ── Mark Delivered ──
+async function markDelivered(reqId) {
+  if (!confirm('Mark this order as delivered?')) return;
+  const res = await fetch(`/seller/order-requests/delivered/${reqId}/`, {
+    method: 'POST', headers: {'X-CSRFToken': CSRF}
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast('📦 ' + data.message, 'success');
+    setTimeout(() => location.reload(), 1200);
+  } else showToast('❌ ' + data.error, 'danger');
+}
+
+// ── Toast ──
+function showToast(msg, type='success') {
+  const t = document.createElement('div');
+  t.className = `position-fixed bottom-0 end-0 m-4 alert alert-${type} shadow`;
+  t.style.cssText = 'z-index:9999;min-width:280px;border-radius:10px;';
+  t.innerHTML = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+}
+</script>
+{% endblock %}

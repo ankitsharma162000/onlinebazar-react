@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}My Products — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold"><i class="fas fa-box text-success me-2"></i>My Products</h4>
+    <a href="/seller/products/add/" class="btn btn-success fw-bold"><i class="fas fa-plus me-1"></i>Add Product</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover shadow-sm align-middle">
+      <thead class="table-success">
+        <tr><th>Image</th><th>Product Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+        <tr>
+          <td>
+            {% if p.product_image %}
+            <img src="{{ p.product_image.url }}" style="width:55px;height:55px;object-fit:cover;" class="rounded shadow-sm" alt="{{ p.product_name }}"/>
+            {% else %}
+            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width:55px;height:55px;"><i class="fas fa-box text-muted"></i></div>
+            {% endif %}
+          </td>
+          <td><strong>{{ p.product_name }}</strong><br/><small class="text-muted">{{ p.manufacturing_date }}</small></td>
+          <td><span class="badge bg-secondary">{{ p.category }}</span></td>
+          <td class="fw-bold text-primary">₹{{ p.price }}</td>
+          <td>
+            {% with sb=p.stock_badge %}
+            <span class="badge bg-{{ sb.2 }}">{{ sb.1 }}</span>
+            <br/><small class="text-muted fw-bold">{{ p.stock_quantity }} units</small>
+            {% endwith %}
+          </td>
+          <td><span class="badge bg-success">Active</span></td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="/seller/products/edit/{{ p.product_id }}/" class="btn btn-sm btn-outline-warning" title="Edit"><i class="fas fa-edit"></i></a>
+              <a href="/product/{{ p.product_id }}/" class="btn btn-sm btn-outline-primary" title="View"><i class="fas fa-eye"></i></a>
+              <form method="POST" action="/seller/products/delete/{{ p.product_id }}/" onsubmit="return confirm('Remove this product?')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="fas fa-trash"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center text-muted py-4">No products listed yet. <a href="/seller/products/add/">Add your first product!</a></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <a href="/seller/dashboard/" class="btn btn-outline-secondary">← Dashboard</a>
+</div>
+{% endblock %}

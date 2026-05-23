@@ -1,0 +1,273 @@
+/* =============================================
+   OnlineBazar — E-Commerce MCA Project
+   Developed by: Ankit Sharma & Niraj Kumar
+   ============================================= */
+
+:root {
+  --primary:    #2874F0;
+  --accent:     #FB641B;
+  --success:    #26a541;
+  --warning:    #FFD700;
+  --dark-blue:  #1a1a2e;
+  --light-bg:   #F1F3F6;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: var(--light-bg);
+  color: #212121;
+}
+
+/* ── Navbar ── */
+.navbar { background: var(--primary) !important; }
+.navbar-brand { letter-spacing: 1px; color: #fff !important; }
+
+/* ── Buttons ── */
+.btn-warning  { background-color: var(--accent) !important; border-color: var(--accent) !important; color: #fff !important; }
+.btn-warning:hover { background-color: #e55a17 !important; border-color: #e55a17 !important; }
+.btn-primary  { background-color: var(--primary) !important; border-color: var(--primary) !important; }
+.btn-primary:hover { background-color: #1a5ecf !important; border-color: #1a5ecf !important; }
+.btn-outline-primary { color: var(--primary) !important; border-color: var(--primary) !important; }
+.btn-outline-primary:hover { background-color: var(--primary) !important; color: #fff !important; }
+.btn { border-radius: 4px; transition: all 0.2s ease; }
+.btn-lg { border-radius: 6px; }
+
+/* ══════════════════════════════════════════════
+   PRODUCT CARD ANIMATIONS
+══════════════════════════════════════════════ */
+
+.product-card {
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  transition:
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.35s ease,
+    border-color 0.25s ease;
+  position: relative;
+}
+
+/* Lift + glow on hover */
+.product-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow:
+    0 20px 40px rgba(40, 116, 240, 0.2),
+    0 6px 12px rgba(0,0,0,0.08) !important;
+  border-color: var(--primary) !important;
+  z-index: 10;
+}
+
+/* Shimmer overlay effect */
+.product-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255,255,255,0.35) 50%,
+    transparent 100%
+  );
+  z-index: 2;
+  transition: left 0.55s ease;
+  pointer-events: none;
+}
+.product-card:hover::before {
+  left: 150%;
+}
+
+/* Image zoom on hover */
+.product-card .card-img-top {
+  transition: transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+}
+.product-card:hover .card-img-top {
+  transform: scale(1.12);
+}
+
+/* Animated "Add to Cart" button slide up on card hover */
+.product-card .card-footer {
+  transition: background 0.3s ease;
+}
+.product-card .card-footer .btn {
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+.product-card:hover .card-footer .btn-primary {
+  background: linear-gradient(135deg, var(--primary), #1a5ecf) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40,116,240,0.45);
+}
+
+/* Ripple effect on button click */
+.product-card .btn::after {
+  content: '';
+  position: absolute;
+  width: 0; height: 0;
+  background: rgba(255,255,255,0.4);
+  border-radius: 50%;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.4s ease, height 0.4s ease, opacity 0.4s ease;
+  opacity: 0;
+}
+.product-card .btn:active::after {
+  width: 200px; height: 200px;
+  opacity: 0;
+}
+
+/* Badge pulse on hover */
+.product-card:hover .badge {
+  animation: badgePop 0.3s ease;
+}
+@keyframes badgePop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+/* Heart button wiggle */
+.product-card:hover .btn-outline-danger {
+  animation: heartbeat 0.6s ease;
+}
+@keyframes heartbeat {
+  0%   { transform: scale(1); }
+  25%  { transform: scale(1.2); }
+  50%  { transform: scale(1); }
+  75%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* Rating stars glow */
+.product-card:hover .text-warning {
+  text-shadow: 0 0 8px rgba(255, 193, 7, 0.8);
+  transition: text-shadow 0.3s ease;
+}
+
+/* Price pop */
+.product-card:hover .text-primary.fw-bold {
+  transform: scale(1.08);
+  display: inline-block;
+  transition: transform 0.25s ease;
+  color: var(--accent) !important;
+}
+
+/* ── Page load fade-in for product grid ── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.row-cols-2 .col,
+.row-cols-md-3 .col,
+.row-cols-lg-4 .col {
+  animation: fadeInUp 0.5s ease both;
+}
+/* Stagger each card */
+.row .col:nth-child(1)  { animation-delay: 0.05s; }
+.row .col:nth-child(2)  { animation-delay: 0.10s; }
+.row .col:nth-child(3)  { animation-delay: 0.15s; }
+.row .col:nth-child(4)  { animation-delay: 0.20s; }
+.row .col:nth-child(5)  { animation-delay: 0.25s; }
+.row .col:nth-child(6)  { animation-delay: 0.30s; }
+.row .col:nth-child(7)  { animation-delay: 0.35s; }
+.row .col:nth-child(8)  { animation-delay: 0.40s; }
+.row .col:nth-child(9)  { animation-delay: 0.45s; }
+.row .col:nth-child(10) { animation-delay: 0.50s; }
+.row .col:nth-child(11) { animation-delay: 0.55s; }
+.row .col:nth-child(12) { animation-delay: 0.60s; }
+
+/* ── Category pill hover ── */
+.btn-outline-primary, .btn-primary {
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.btn-outline-primary:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+/* ── Recommended card ── */
+.d-flex.gap-3 .card {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+.d-flex.gap-3 .card:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 12px 28px rgba(40,116,240,0.2) !important;
+}
+
+/* ══════════════════════════════════════════════
+   REST OF STYLES
+══════════════════════════════════════════════ */
+
+.hero-slide { min-height: 300px; }
+
+.payment-opt { cursor: pointer; border-radius: 6px; transition: all 0.2s ease; }
+.payment-opt:hover { border-color: var(--primary) !important; background: rgba(40,116,240,0.06); }
+
+.card { border-radius: 8px; background: #fff; }
+.card-header { border-radius: 8px 8px 0 0 !important; }
+.card-header.bg-warning { background-color: var(--accent) !important; color: #fff !important; }
+.card-header.bg-primary { background-color: var(--primary) !important; }
+
+.table th { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--primary); }
+.table-dark { background-color: var(--primary) !important; }
+.table-dark th { color: #fff !important; }
+.table-striped > tbody > tr:nth-of-type(odd) > * { background-color: rgba(40,116,240,0.04); }
+
+.badge { font-size: 12px; padding: 5px 10px; border-radius: 4px; }
+.bg-primary { background-color: var(--primary) !important; }
+.bg-warning  { background-color: var(--accent) !important; }
+.text-primary { color: var(--primary) !important; }
+.text-warning { color: var(--accent) !important; }
+.border-warning { border-color: var(--accent) !important; }
+
+footer { background: var(--dark-blue) !important; border-top: 4px solid var(--accent); }
+footer .text-warning { color: var(--accent) !important; }
+
+.alert { border-radius: 6px; }
+.alert-info    { border-left: 4px solid var(--primary); }
+.alert-warning { border-left: 4px solid var(--accent); }
+.alert-success { border-left: 4px solid var(--success); }
+
+.kpi-card {
+  border-radius: 12px;
+  border: none;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+}
+.kpi-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.15) !important;
+}
+
+.stepper-circle {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  margin: 0 auto 6px;
+  background: var(--primary);
+  color: #fff;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #2874F0; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+@media (max-width: 576px) {
+  .hero-slide { min-height: 200px; }
+  .hero-slide h1 { font-size: 1.5rem; }
+  .product-card:hover { transform: translateY(-4px) scale(1.01); }
+}

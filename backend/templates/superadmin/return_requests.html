@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+{% block title %}Return Requests — OnlineBazar Admin{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="fw-bold mb-0"><i class="fas fa-undo text-warning me-2"></i>Return Requests</h3>
+      <small class="text-muted">Manage customer return and refund requests</small>
+    </div>
+    <div class="d-flex gap-2">
+      <span class="badge bg-warning text-dark fs-6">{{ counts.pending }} Pending</span>
+      <span class="badge bg-success fs-6">{{ counts.approved }} Approved</span>
+      <span class="badge bg-danger fs-6">{{ counts.rejected }} Rejected</span>
+    </div>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div class="d-flex gap-2 mb-4 flex-wrap">
+    {% for key, label in filter_choices %}
+    <a href="?status={{ key }}"
+       class="btn btn-sm {% if status_filter == key %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+      {{ label }}
+      <span class="badge {% if status_filter == key %}bg-white text-primary{% else %}bg-primary{% endif %} ms-1">
+        {{ counts|get_item:key }}
+      </span>
+    </a>
+    {% endfor %}
+  </div>
+
+  {% if returns %}
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      {% for r in returns %}
+      <div class="border-bottom p-4" id="return-{{ r.id }}">
+        <div class="row g-3 align-items-start">
+
+          <!-- Product Info -->
+          <div class="col-md-3">
+            <div class="d-flex gap-2 align-items-center">
+              {% if r.order_item.product.product_image %}
+              <img src="{{ r.order_item.product.product_image.url }}"
+                   style="width:55px;height:55px;object-fit:cover;border-radius:6px;" alt="">
+              {% else %}
+              <div class="bg-light rounded d-flex align-items-center justify-content-center"
+                   style="width:55px;height:55px;">
+                <i class="fas fa-box text-muted"></i>
+              </div>
+              {% endif %}
+              <div>
+                <div class="fw-semibold small">{{ r.order_item.product.product_name|truncatechars:30 }}</div>
+                <div class="text-muted small">Order #{{ r.order.order_id|stringformat:"s"|slice:":8"|upper }}</div>
+                <div class="text-muted small">Qty: {{ r.order_item.quantity }} × ₹{{ r.order_item.price_at_purchase }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Customer & Reason -->
+          <div class="col-md-3">
+            <div class="fw-semibold small">👤 {{ r.user.name }}</div>
+            <div class="text-muted small">📞 {{ r.user.phone_number }}</div>
+            <div class="mt-1">
+              <span class="badge bg-light text-dark border small">{{ r.get_return_type_display }}</span>
+            </div>
+            <div class="mt-1 fw-semibold small text-danger">{{ r.get_reason_display }}</div>
+            <div class="text-muted small mt-1">{{ r.description|truncatechars:70 }}</div>
+            {% if r.product_image %}
+            <a href="{{ r.product_image.url }}" target="_blank"
+               class="btn btn-xs btn-outline-primary btn-sm mt-1">
+              <i class="fas fa-image me-1"></i>View Photo
+            </a>
+            {% endif %}
+          </div>
+
+          <!-- Refund & Status -->
+          <div class="col-md-2 text-center">
+            <div class="fw-bold text-primary fs-5">₹{{ r.refund_amount }}</div>
+            <div class="text-muted small">Refund Amount</div>
+            <div class="text-muted small mt-1">{{ r.created_at|date:"d M Y" }}</div>
+            <span class="badge mt-1
+              {% if r.status == 'pending' %}bg-warning text-dark
+              {% elif r.status == 'approved' %}bg-success
+              {% elif r.status == 'rejected' %}bg-danger
+              {% elif r.status == 'picked_up' %}bg-primary
+              {% elif r.status == 'refunded' %}bg-success
+              {% endif %}">
+              {{ r.get_status_display }}
+            </span>
+          </div>
+
+          <!-- Admin Actions -->
+          <div class="col-md-4">
+            {% if r.status == 'pending' %}
+            <textarea class="form-control form-control-sm mb-2" id="note-{{ r.id }}"
+                      rows="2" placeholder="Admin note (optional)..."></textarea>
+            <div class="d-flex gap-2">
+              <button class="btn btn-success btn-sm flex-grow-1 fw-semibold"
+                      onclick="updateReturn('{{ r.id }}', 'approved')">
+                <i class="fas fa-check me-1"></i>Approve & Refund
+              </button>
+              <button class="btn btn-danger btn-sm flex-grow-1 fw-semibold"
+                      onclick="updateReturn('{{ r.id }}', 'rejected')">
+                <i class="fas fa-times me-1"></i>Reject
+              </button>
+            </div>
+
+            {% elif r.status == 'approved' %}
+            <button class="btn btn-primary btn-sm fw-semibold w-100 mb-2"
+                    onclick="updateReturn('{{ r.id }}', 'picked_up')">
+              <i class="fas fa-truck me-1"></i>Mark Item Picked Up
+            </button>
+            {% if r.admin_note %}
+            <div class="text-muted small">📝 {{ r.admin_note }}</div>
+            {% endif %}
+
+            {% elif r.status == 'picked_up' %}
+            <button class="btn btn-success btn-sm fw-semibold w-100"
+                    onclick="updateReturn('{{ r.id }}', 'refunded')">
+              <i class="fas fa-rupee-sign me-1"></i>Mark Refund Processed
+            </button>
+            {% if r.admin_note %}
+            <div class="text-muted small mt-2">📝 {{ r.admin_note }}</div>
+            {% endif %}
+
+            {% elif r.status == 'refunded' %}
+            <div class="text-center text-success">
+              <i class="fas fa-check-circle fa-2x"></i>
+              <div class="small fw-bold mt-1">Refund Processed!</div>
+            </div>
+
+            {% elif r.status == 'rejected' %}
+            <div class="text-center text-danger">
+              <i class="fas fa-times-circle fa-2x"></i>
+              <div class="small fw-bold mt-1">Rejected</div>
+              {% if r.admin_note %}
+              <div class="text-muted small mt-1">{{ r.admin_note }}</div>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% else %}
+  <div class="text-center py-5">
+    <i class="fas fa-undo fa-4x text-muted mb-3"></i>
+    <h5 class="text-muted">No return requests
+      {% if status_filter != 'all' %}with status "{{ status_filter }}"{% endif %}
+    </h5>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+async function updateReturn(returnId, newStatus) {
+  const noteEl = document.getElementById('note-' + returnId);
+  const noteVal = noteEl ? noteEl.value.trim() : '';
+  const labels = {
+    'approved': 'Approve this return request?',
+    'rejected': 'Reject this return request?',
+    'picked_up': 'Mark item as picked up?',
+    'refunded': 'Mark refund as processed?'
+  };
+  if (!confirm(labels[newStatus])) return;
+  const res = await fetch('/superadmin/returns/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+    body: JSON.stringify({ return_id: returnId, status: newStatus, admin_note: noteVal })
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast('✅ ' + data.message);
+    setTimeout(() => location.reload(), 1000);
+  } else {
+    showToast('❌ ' + (data.error || 'Error'), 'danger');
+  }
+}
+function showToast(msg, type='success') {
+  const t = document.createElement('div');
+  t.className = `position-fixed bottom-0 end-0 m-4 alert alert-${type} shadow`;
+  t.style.zIndex = 9999; t.innerHTML = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+</script>
+{% endblock %}

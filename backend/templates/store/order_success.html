@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Order Placed — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container mt-5">
+  <div class="text-center py-4">
+    <div class="display-1 text-success mb-3">✅</div>
+    <h2 class="fw-bold text-success">Order Placed Successfully!</h2>
+    <p class="lead text-muted">Thank you for shopping with OnlineBazar.</p>
+
+    {% if order.is_bazar_member %}
+    <div class="alert border-0 d-inline-block px-4 py-2 mb-3"
+         style="background:linear-gradient(135deg,#fff8e1,#fffde7);border-left:4px solid #FB641B !important;">
+      ⭐ <strong>Bazar Prime</strong> — Free delivery & no platform fee applied!
+    </div>
+    {% endif %}
+
+    <div class="card shadow mx-auto mt-3" style="max-width:520px;">
+      <div class="card-header bg-primary text-white fw-bold">
+        <i class="fas fa-receipt me-2"></i>Order Summary
+      </div>
+      <div class="card-body">
+        <table class="table table-borderless mb-0">
+          <tr>
+            <td class="text-muted">Order ID</td>
+            <td><strong>#{{ order.order_id|stringformat:"s"|slice:":8"|upper }}</strong></td>
+          </tr>
+          <tr>
+            <td class="text-muted">Product Subtotal</td>
+            <td><strong>₹{{ order.subtotal }}</strong></td>
+          </tr>
+          <tr>
+            <td class="text-muted">🚚 Delivery</td>
+            <td>
+              {% if order.is_bazar_member %}
+              <span class="text-success fw-semibold">FREE ⭐</span>
+              {% elif order.delivery_charge == 0 %}
+              <span class="text-success">FREE</span>
+              {% else %}
+              <span class="text-danger">₹{{ order.delivery_charge }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td class="text-muted">🏢 Platform Fee</td>
+            <td>
+              {% if order.is_bazar_member %}
+              <span class="text-success fw-semibold">₹0 ⭐</span>
+              {% else %}
+              <span class="text-danger">₹{{ order.platform_fee }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          <tr class="border-top">
+            <td class="fw-bold fs-5">Total Paid</td>
+            <td><strong class="text-primary fs-5">₹{{ order.total_amount }}</strong></td>
+          </tr>
+          <tr>
+            <td class="text-muted">Payment</td>
+            <td><span class="badge bg-info">{{ order.get_payment_method_display }}</span></td>
+          </tr>
+          <tr>
+            <td class="text-muted">Status</td>
+            <td><span class="badge bg-warning text-dark">{{ order.order_status }}</span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="d-flex gap-3 justify-content-center mt-4 flex-wrap">
+      <a href="/order/bill/{{ order.order_id }}/" class="btn btn-success btn-lg">
+        <i class="fas fa-file-invoice me-2"></i>View Invoice
+      </a>
+      <a href="/order/bill/{{ order.order_id }}/pdf/" class="btn btn-danger btn-lg">
+        <i class="fas fa-file-pdf me-2"></i>Download PDF
+      </a>
+      <a href="/order/track/{{ order.order_id }}/" class="btn btn-primary btn-lg">
+        <i class="fas fa-map-marker-alt me-2"></i>Track Order
+      </a>
+      <a href="/" class="btn btn-outline-primary btn-lg">
+        <i class="fas fa-shopping-bag me-2"></i>Continue Shopping
+      </a>
+    </div>
+
+    {% if not order.is_bazar_member %}
+    <div class="mt-4 p-3 rounded" style="background:#fff8e1;max-width:500px;margin:0 auto;">
+      <strong>💡 Save on delivery & platform fees next time!</strong><br>
+      <small class="text-muted">Join Bazar Prime for free delivery & no platform fees.</small><br>
+      <a href="/user/membership/" class="btn btn-warning btn-sm mt-2 fw-bold">Join Bazar Prime ⭐</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

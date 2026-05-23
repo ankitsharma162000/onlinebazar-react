@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Return Requests — Seller{% endblock %}
+{% block content %}
+<div class="container-fluid mt-3 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-0"><i class="fas fa-undo text-danger me-2"></i>Return Requests</h4>
+      <small class="text-muted">Review and act on return requests for your products</small>
+    </div>
+    <a href="/seller/dashboard/" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Dashboard</a>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-success alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- STATS -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card text-center border-0 shadow-sm bg-warning text-dark p-3">
+        <h4 class="fw-bold">{{ returns|length }}</h4><p class="mb-0 small">Total Requests</p>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center border-0 shadow-sm bg-danger text-white p-3">
+        <h4 class="fw-bold">{% for r in returns %}{% if r.status == 'pending' %}{% with count=forloop.counter %}{% endwith %}{% endif %}{% endfor %}{{ returns|length }}</h4>
+        <p class="mb-0 small">Pending</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    {% for ret in returns %}
+    <div class="col-md-6">
+      <div class="card shadow border-0 h-100">
+        <div class="card-header d-flex justify-content-between align-items-center
+          {% if ret.status == 'pending' %}bg-warning text-dark
+          {% elif ret.status == 'approved' %}bg-success text-white
+          {% elif ret.status == 'rejected' %}bg-danger text-white
+          {% else %}bg-secondary text-white{% endif %}">
+          <strong><i class="fas fa-undo me-2"></i>Return #{{ ret.id|stringformat:"s"|slice:":8"|upper }}</strong>
+          <span class="badge bg-white text-dark">{{ ret.get_status_display }}</span>
+        </div>
+        <div class="card-body">
+          <div class="row mb-2">
+            <div class="col-6"><span class="text-muted small">Customer</span><br><strong>{{ ret.user.name }}</strong></div>
+            <div class="col-6"><span class="text-muted small">Product</span><br><strong>{{ ret.order_item.product.product_name|truncatechars:25 }}</strong></div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-6"><span class="text-muted small">Type</span><br><span class="badge bg-info">{{ ret.get_return_type_display }}</span></div>
+            <div class="col-6"><span class="text-muted small">Reason</span><br><span class="badge bg-secondary">{{ ret.get_reason_display }}</span></div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted small">Description</span><br>
+            <p class="small mb-0">{{ ret.description }}</p>
+          </div>
+          {% if ret.product_image %}
+          <div class="mb-2">
+            <span class="text-muted small">Proof Photo</span><br>
+            <img src="{{ ret.product_image.url }}" style="max-height:80px;border-radius:6px;border:1px solid #ddd;" alt="return photo">
+          </div>
+          {% endif %}
+          <div class="mb-2">
+            <span class="text-muted small">Requested on</span><br>
+            <small>{{ ret.created_at|date:"d M Y H:i" }}</small>
+          </div>
+
+          {% if ret.seller_note %}
+          <div class="alert alert-light border mt-2 mb-0 py-2">
+            <small><strong>Your note:</strong> {{ ret.seller_note }}</small>
+          </div>
+          {% endif %}
+
+          <!-- ACTION FORM — only for pending -->
+          {% if ret.status == 'pending' %}
+          <hr>
+          <form method="POST" action="/seller/returns/action/{{ ret.id }}/">
+            {% csrf_token %}
+            <div class="mb-2">
+              <textarea name="seller_note" class="form-control form-control-sm" rows="2"
+                        placeholder="Add a note (reason for rejection, pickup instructions, etc.)"></textarea>
+            </div>
+            <div class="d-flex gap-2">
+              <button type="submit" name="action" value="approve" class="btn btn-success btn-sm fw-bold flex-grow-1">
+                <i class="fas fa-check me-1"></i>Approve Return
+              </button>
+              <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm fw-bold flex-grow-1"
+                      onclick="return confirm('Reject this return request?')">
+                <i class="fas fa-times me-1"></i>Reject
+              </button>
+            </div>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5 text-muted">
+      <i class="fas fa-check-circle fa-3x mb-3 text-success"></i>
+      <h5>No return requests for your products!</h5>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

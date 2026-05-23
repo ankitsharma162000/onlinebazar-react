@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}{% if edit %}Edit{% else %}Add{% endif %} Product — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container mt-4 mb-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow">
+        <div class="card-header bg-success text-white fw-bold">
+          <i class="fas fa-{% if edit %}edit{% else %}plus{% endif %} me-2"></i>
+          {% if edit %}Edit Product{% else %}Add New Product{% endif %}
+        </div>
+        <div class="card-body p-4">
+          <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label fw-semibold">Product Name *</label>
+                <input type="text" name="product_name" class="form-control" value="{% if product %}{{ product.product_name }}{% endif %}" required/>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Category *</label>
+                <select name="category" class="form-select" required>
+                  <option value="">Select Category</option>
+                  {% for val, label in categories %}
+                  <option value="{{ val }}" {% if product and product.category == val %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Price (₹) *</label>
+                <input type="number" name="price" class="form-control" step="0.01" min="0.01" value="{% if product %}{{ product.price }}{% endif %}" required/>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Stock Quantity *</label>
+                <input type="number" name="stock_quantity" class="form-control" min="0" value="{% if product %}{{ product.stock_quantity }}{% else %}0{% endif %}" required/>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Manufacturing Date *</label>
+                <input type="date" name="manufacturing_date" class="form-control" value="{% if product %}{{ product.manufacturing_date|date:'Y-m-d' }}{% endif %}"/>
+                <small class="text-muted">Optional</small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Expiry Date <span class="text-muted">(optional)</span></label>
+                <input type="date" name="expiry_date" class="form-control" value="{% if product and product.expiry_date %}{{ product.expiry_date|date:'Y-m-d' }}{% endif %}"/>
+                <small class="text-muted">Optional — leave blank if not applicable</small>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Description</label>
+                <textarea name="description" class="form-control" rows="3" placeholder="Describe your product...">{% if product %}{{ product.description }}{% endif %}</textarea>
+              </div>
+
+              <!-- Image Upload -->
+              <div class="col-12"><hr/><h6 class="fw-bold text-success"><i class="fas fa-images me-2"></i>Product Images</h6></div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Main Image</label>
+                <input type="file" name="product_image" class="form-control" accept="image/jpeg,image/png,image/webp" onchange="previewMain(this)"/>
+                {% if product and product.product_image %}
+                <img src="{{ product.product_image.url }}" class="img-thumbnail mt-2" style="height:100px;object-fit:cover;" id="mainPreview" alt="current"/>
+                {% else %}
+                <img id="mainPreview" class="img-thumbnail mt-2 d-none" style="height:100px;object-fit:cover;" alt="preview"/>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Additional Images <span class="text-muted">(up to 4)</span></label>
+                <input type="file" name="extra_images" class="form-control" accept="image/jpeg,image/png,image/webp" multiple onchange="previewExtras(this)"/>
+                <div id="extraPreviews" class="d-flex flex-wrap gap-1 mt-2">
+                  {% for img in product.images.all %}
+                  <img src="{{ img.image.url }}" class="img-thumbnail" style="height:70px;width:70px;object-fit:cover;" alt="img"/>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+            <div class="d-flex gap-2 mt-4">
+              <button type="submit" class="btn btn-success fw-bold flex-grow-1 btn-lg">
+                <i class="fas fa-save me-2"></i>{% if edit %}Update Product{% else %}Add Product{% endif %}
+              </button>
+              <a href="/seller/products/" class="btn btn-outline-secondary btn-lg">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function previewMain(input) {
+  const prev = document.getElementById('mainPreview');
+  if (input.files && input.files[0]) {
+    prev.src = URL.createObjectURL(input.files[0]);
+    prev.classList.remove('d-none');
+  }
+}
+function previewExtras(input) {
+  const container = document.getElementById('extraPreviews');
+  container.innerHTML = '';
+  Array.from(input.files).slice(0, 4).forEach(file => {
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    img.className = 'img-thumbnail';
+    img.style.cssText = 'height:70px;width:70px;object-fit:cover;';
+    container.appendChild(img);
+  });
+}
+</script>
+{% endblock %}

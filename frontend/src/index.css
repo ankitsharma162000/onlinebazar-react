@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-white px-4 py-2 rounded font-semibold hover:bg-primary-dark transition-colors disabled:opacity-50;
+  }
+  .btn-accent {
+    @apply bg-accent text-white px-4 py-2 rounded font-semibold hover:bg-accent-dark transition-colors;
+  }
+  .btn-outline {
+    @apply border border-primary text-primary px-4 py-2 rounded font-semibold hover:bg-primary hover:text-white transition-colors;
+  }
+  .card {
+    @apply bg-white rounded-lg shadow hover:shadow-md transition-shadow;
+  }
+  .input {
+    @apply w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary text-sm;
+  }
+  .badge-success { @apply bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium; }
+  .badge-warning { @apply bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full font-medium; }
+  .badge-danger  { @apply bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full font-medium; }
+}

@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %}Fake Review Detection — OnlineBazar Admin{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="fw-bold mb-0"><i class="fas fa-shield-alt text-danger me-2"></i>AI Fake Review Detection</h3>
+      <small class="text-muted">NLP-powered analysis — flags suspicious reviews automatically</small>
+    </div>
+    <div class="d-flex gap-2">
+      <span class="badge bg-danger fs-6">{{ fake_count }} Likely Fake</span>
+      <span class="badge bg-warning text-dark fs-6">{{ suspicious_count }} Suspicious</span>
+      <span class="badge bg-success fs-6">{{ genuine_count }} Genuine</span>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card kpi-card text-center p-3 border-0 shadow-sm bg-danger text-white">
+        <div class="fs-1 fw-bold">{{ fake_count }}</div>
+        <div>🚫 Likely Fake</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card kpi-card text-center p-3 border-0 shadow-sm bg-warning text-dark">
+        <div class="fs-1 fw-bold">{{ suspicious_count }}</div>
+        <div>⚠️ Suspicious</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card kpi-card text-center p-3 border-0 shadow-sm bg-success text-white">
+        <div class="fs-1 fw-bold">{{ genuine_count }}</div>
+        <div>✅ Genuine</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card kpi-card text-center p-3 border-0 shadow-sm bg-primary text-white">
+        <div class="fs-1 fw-bold">{{ total }}</div>
+        <div>📊 Total Analyzed</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter tabs -->
+  <ul class="nav nav-tabs mb-3" id="reviewTabs">
+    <li class="nav-item"><a class="nav-link active" data-filter="all" href="#">All ({{ total }})</a></li>
+    <li class="nav-item"><a class="nav-link text-danger" data-filter="Likely Fake" href="#">🚫 Likely Fake ({{ fake_count }})</a></li>
+    <li class="nav-item"><a class="nav-link text-warning" data-filter="Suspicious" href="#">⚠️ Suspicious ({{ suspicious_count }})</a></li>
+    <li class="nav-item"><a class="nav-link text-success" data-filter="Genuine" href="#">✅ Genuine ({{ genuine_count }})</a></li>
+  </ul>
+
+  <!-- Reviews List -->
+  {% if analyzed %}
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0" id="reviews-table">
+          <thead class="table-dark">
+            <tr>
+              <th>Product</th>
+              <th>User</th>
+              <th>Review</th>
+              <th>Rating</th>
+              <th>AI Analysis</th>
+              <th>Confidence</th>
+              <th>Reasons</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in analyzed %}
+            <tr class="review-row" data-label="{{ item.analysis.label }}">
+              <td class="small fw-semibold">{{ item.review.product.product_name|truncatechars:25 }}</td>
+              <td class="small">{{ item.review.user.name|truncatechars:15 }}</td>
+              <td class="small" style="max-width:200px;">
+                {{ item.review.review_text|truncatechars:80 }}
+              </td>
+              <td class="text-center">
+                <span class="text-warning">{% for i in "12345" %}{% if forloop.counter <= item.review.rating %}★{% else %}☆{% endif %}{% endfor %}</span>
+              </td>
+              <td>
+                <span class="badge bg-{{ item.analysis.color }} px-2 py-1">
+                  {{ item.analysis.label }}
+                </span>
+              </td>
+              <td>
+                <div class="progress" style="height:8px;width:80px;">
+                  <div class="progress-bar bg-{{ item.analysis.color }}"
+                       style="width:{{ item.analysis.confidence }}%"></div>
+                </div>
+                <small class="text-muted">{{ item.analysis.confidence }}%</small>
+              </td>
+              <td class="small text-muted" style="max-width:180px;">
+                {% for reason in item.analysis.reasons %}
+                <div>• {{ reason }}</div>
+                {% endfor %}
+              </td>
+              <td>
+                {% if item.analysis.label != 'Genuine' %}
+                <button class="btn btn-outline-danger btn-sm" onclick="deleteReview({{ item.review.id }}, this)">
+                  <i class="fas fa-trash"></i> Delete
+                </button>
+                {% else %}
+                <span class="text-success small"><i class="fas fa-check"></i> OK</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <i class="fas fa-star fa-4x text-muted mb-3"></i>
+    <h5 class="text-muted">No reviews to analyze yet</h5>
+    <p class="text-muted">Reviews will appear here once users start reviewing products</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+// Tab filtering
+document.querySelectorAll('[data-filter]').forEach(tab => {
+  tab.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelectorAll('[data-filter]').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const filter = tab.dataset.filter;
+    document.querySelectorAll('.review-row').forEach(row => {
+      row.style.display = (filter === 'all' || row.dataset.label === filter) ? '' : 'none';
+    });
+  });
+});
+
+async function deleteReview(id, btn) {
+  if (!confirm('Delete this review permanently?')) return;
+  const res = await fetch('/superadmin/fake-reviews/delete/' + id + '/', {
+    method: 'POST',
+    headers: {'X-CSRFToken': '{{ csrf_token }}'}
+  });
+  const data = await res.json();
+  if (data.success) {
+    btn.closest('tr').remove();
+    showToast('🗑️ Review deleted!');
+  }
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'position-fixed bottom-0 end-0 m-4 alert alert-success shadow';
+  t.style.zIndex = 9999; t.innerHTML = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+</script>
+{% endblock %}

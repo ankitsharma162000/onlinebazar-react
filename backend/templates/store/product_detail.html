@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+{% block title %}{{ product.product_name }} — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container mt-3">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">Home</a></li>
+      <li class="breadcrumb-item"><a href="/?category={{ product.category }}">{{ product.category }}</a></li>
+      <li class="breadcrumb-item active">{{ product.product_name }}</li>
+    </ol>
+  </nav>
+  <div class="row g-4">
+    <!-- Images -->
+    <div class="col-md-5">
+      {% if product.product_image %}
+      <img src="{{ product.product_image.url }}" class="img-fluid rounded shadow" id="mainImg" style="max-height:400px;width:100%;object-fit:cover;" alt="{{ product.product_name }}"/>
+      {% else %}
+      <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height:400px;"><i class="fas fa-box fa-5x text-muted"></i></div>
+      {% endif %}
+      {% if product.images.all %}
+      <div class="d-flex gap-2 mt-2 flex-wrap">
+        {% for img in product.images.all %}
+        <img src="{{ img.image.url }}" class="rounded border thumbnail-img" style="width:70px;height:70px;object-fit:cover;cursor:pointer;" onclick="document.getElementById('mainImg').src=this.src" alt="img"/>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    <!-- Details -->
+    <div class="col-md-7">
+      <span class="badge bg-secondary mb-2">{{ product.category }}</span>
+      <h2 class="fw-bold">{{ product.product_name }}</h2>
+      <div class="text-warning fs-5 mb-1">
+        {% for i in range5 %}{% if i <= product.average_rating %}★{% else %}☆{% endif %}{% endfor %}
+        <span class="text-muted fs-6">({{ product.review_count }} reviews)</span>
+      </div>
+      <h3 class="text-primary fw-bold">₹{{ product.price }}</h3>
+      {% with sb=product.stock_badge %}
+      <span class="badge bg-{{ sb.2 }} fs-6 mb-3">{{ sb.1 }}</span>
+      {% endwith %}
+      <p class="text-muted">{{ product.description }}</p>
+      <table class="table table-sm table-borderless w-auto">
+        <tr><td class="text-muted pe-3">Seller</td><td><strong>{{ product.seller.name }}</strong></td></tr>
+        <tr><td class="text-muted pe-3">Category</td><td>{{ product.category }}</td></tr>
+        <tr><td class="text-muted pe-3">Mfg. Date</td><td>{{ product.manufacturing_date }}</td></tr>
+        {% if product.expiry_date %}<tr><td class="text-muted pe-3">Expiry</td><td>{{ product.expiry_date }}</td></tr>{% endif %}
+      </table>
+      {% if not request.session.seller_id %}
+      <div class="d-flex gap-2 mt-3 flex-wrap">
+        {% if product.stock_quantity > 0 %}
+        <a href="/cart/add/{{ product.product_id }}/" class="btn btn-primary btn-lg"><i class="fas fa-cart-plus me-2"></i>Add to Cart</a>
+        {% else %}
+        <button class="btn btn-secondary btn-lg" disabled>Out of Stock</button>
+        {% endif %}
+        {% if in_wishlist %}
+        <button class="btn btn-danger btn-lg"><i class="fas fa-heart me-2"></i>Wishlisted</button>
+        {% else %}
+        <a href="/wishlist/add/{{ product.product_id }}/" class="btn btn-outline-danger btn-lg"><i class="far fa-heart me-2"></i>Wishlist</a>
+        {% endif %}
+        <a href="/compare/?ids={{ product.product_id }}" class="btn btn-outline-primary btn-lg">
+          <i class="fas fa-balance-scale me-2"></i>Compare
+        </a>
+        {% if user %}
+        <button class="btn btn-outline-warning btn-lg" data-bs-toggle="modal" data-bs-target="#priceAlertModal">
+          <i class="fas fa-bell me-2"></i>Price Alert
+        </button>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Price Alert Modal -->
+      {% if user and not request.session.seller_id %}
+      <div class="modal fade" id="priceAlertModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+          <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+              <h6 class="modal-title"><i class="fas fa-bell me-2"></i>Set Price Drop Alert</h6>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <p class="small text-muted">Current price: <strong>₹{{ product.price }}</strong></p>
+              <label class="form-label small fw-semibold">Notify me when price drops to:</label>
+              <div class="input-group">
+                <span class="input-group-text">₹</span>
+                <input type="number" class="form-control" id="target-price" placeholder="e.g. {{ product.price|floatformat:0 }}" max="{{ product.price }}">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-warning w-100" onclick="setPriceAlert('{{ product.product_id }}')">
+                <i class="fas fa-bell me-2"></i>Set Alert
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <script>
+      async function setPriceAlert(pid) {
+        const target = document.getElementById('target-price').value;
+        if (!target) { alert('Enter target price!'); return; }
+        const res = await fetch('/price-alert/set/' + pid + '/', {
+          method: 'POST',
+          headers: {'Content-Type':'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}'},
+          body: 'target_price=' + target
+        });
+        const data = await res.json();
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('priceAlertModal')).hide();
+          alert('✅ ' + data.message);
+        } else { alert('Error: ' + data.error); }
+      }
+      </script>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Reviews -->
+  <div class="row mt-5">
+    <div class="col-md-8">
+      <h4 class="fw-bold mb-3"><i class="fas fa-star text-warning me-2"></i>Customer Reviews</h4>
+      {% if not user_review and user and not request.session.seller_id %}
+      <div class="card mb-4 border-primary">
+        <div class="card-header bg-primary text-white fw-bold">Write a Review</div>
+        <div class="card-body">
+          <form method="POST">
+            {% csrf_token %}
+            <div class="mb-2">
+              <label class="form-label fw-semibold">Rating</label>
+              <div class="star-rating d-flex gap-2">
+                {% for i in range5 %}
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" name="rating" value="{{ i }}" id="star{{ i }}" {% if i == 5 %}checked{% endif %}/>
+                  <label class="form-check-label text-warning" for="star{{ i }}">{{ i }}★</label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            <div class="mb-2">
+              <textarea class="form-control" name="review_text" rows="3" placeholder="Share your experience with this product..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit Review</button>
+          </form>
+        </div>
+      </div>
+      {% elif not user and not request.session.seller_id %}
+      <div class="alert alert-info"><a href="/user/login/">Login</a> to write a review.</div>
+      {% endif %}
+      {% for review in reviews %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <strong>{{ review.user.name }}</strong>
+            <span class="text-warning">{% for i in "12345" %}{% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}{% endfor %}</span>
+          </div>
+          <p class="mb-0 text-muted mt-1">{{ review.review_text }}</p>
+          <small class="text-muted">{{ review.created_at|date:"d M Y" }}</small>
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-muted">No reviews yet. Be the first to review!</p>
+      {% endfor %}
+    </div>
+    <!-- Related -->
+    <div class="col-md-4">
+      <h5 class="fw-bold mb-3">Related Products</h5>
+      {% for p in related %}
+      <div class="card mb-2 shadow-sm">
+        <div class="row g-0 align-items-center">
+          <div class="col-4">
+            {% if p.product_image %}
+            <img src="{{ p.product_image.url }}" class="img-fluid rounded-start" style="height:80px;object-fit:cover;" alt="{{ p.product_name }}"/>
+            {% else %}
+            <div class="bg-light d-flex align-items-center justify-content-center" style="height:80px;"><i class="fas fa-box text-muted"></i></div>
+            {% endif %}
+          </div>
+          <div class="col-8 p-2">
+            <p class="mb-0 fw-semibold small text-truncate">{{ p.product_name }}</p>
+            <p class="mb-0 text-primary fw-bold">₹{{ p.price }}</p>
+            <a href="/product/{{ p.product_id }}/" class="btn btn-outline-primary btn-sm mt-1">View</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

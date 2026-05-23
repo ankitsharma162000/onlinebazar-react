@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Track Order — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h4 class="fw-bold mb-4"><i class="fas fa-map-marker-alt text-primary me-2"></i>Track Your Order</h4>
+  <div class="row g-4">
+    <div class="col-md-8">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white fw-bold">
+          Order #{{ order.order_id|stringformat:"s"|slice:":8"|upper }}
+          <span class="badge bg-warning text-dark float-end">{{ order.order_status }}</span>
+        </div>
+        <div class="card-body">
+          <!-- Stepper -->
+          <div class="d-flex justify-content-between align-items-center mb-4 position-relative">
+            <div class="progress position-absolute w-100" style="height:4px;top:20px;left:0;z-index:0;">
+              <div class="progress-bar bg-success" style="width:{% if order.order_status == 'Placed' %}0%{% elif order.order_status == 'Confirmed' %}25%{% elif order.order_status == 'Shipped' %}50%{% elif order.order_status == 'Out for Delivery' %}75%{% elif order.order_status == 'Delivered' %}100%{% else %}0%{% endif %}"></div>
+            </div>
+            {% for step, done in order.tracking_steps %}
+            <div class="text-center" style="z-index:1;">
+              <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1 {% if done %}bg-success text-white{% else %}bg-light border text-muted{% endif %}" style="width:40px;height:40px;">
+                {% if done %}<i class="fas fa-check"></i>{% else %}<i class="fas fa-circle small"></i>{% endif %}
+              </div>
+              <small class="{% if done %}text-success fw-bold{% else %}text-muted{% endif %}" style="font-size:11px;">{{ step }}</small>
+            </div>
+            {% endfor %}
+          </div>
+          <!-- Order Items -->
+          <h6 class="fw-bold mt-4">Items Ordered</h6>
+          {% for item in order.items.all %}
+          <div class="d-flex align-items-center gap-3 border-bottom py-2">
+            {% if item.product.product_image %}
+            <img src="{{ item.product.product_image.url }}" style="width:55px;height:55px;object-fit:cover;" class="rounded" alt=""/>
+            {% endif %}
+            <div class="flex-grow-1">
+              <p class="mb-0 fw-semibold">{{ item.product.product_name }}</p>
+              <small class="text-muted">Qty: {{ item.quantity }} × ₹{{ item.price_at_purchase }}</small>
+            </div>
+            <strong class="text-primary">₹{{ item.subtotal }}</strong>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="card-footer">
+          <div class="row">
+            <div class="col-6"><span class="text-muted">Payment:</span> <strong>{{ order.get_payment_method_display }}</strong></div>
+            <div class="col-6 text-end"><span class="text-muted">Total:</span> <strong class="text-primary">₹{{ order.total_amount }}</strong></div>
+          </div>
+          <div class="mt-2"><span class="text-muted">Delivery To:</span> <span class="small">{{ order.delivery_address }}</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow">
+        <div class="card-header bg-dark text-white fw-bold">Order Details</div>
+        <div class="card-body">
+          <table class="table table-sm table-borderless">
+            <tr><td class="text-muted">Order ID</td><td><strong>#{{ order.order_id|stringformat:"s"|slice:":8"|upper }}</strong></td></tr>
+            <tr><td class="text-muted">Placed On</td><td>{{ order.order_date|date:"d M Y, h:i A" }}</td></tr>
+            <tr><td class="text-muted">Payment</td><td>{{ order.get_payment_method_display }}</td></tr>
+            <tr><td class="text-muted">Payment Status</td><td><span class="badge bg-{% if order.payment_status == 'Paid' %}success{% else %}warning text-dark{% endif %}">{{ order.payment_status }}</span></td></tr>
+            <tr><td class="text-muted">Order Status</td><td><span class="badge bg-info">{{ order.order_status }}</span></td></tr>
+          </table>
+        </div>
+      </div>
+      <a href="/user/dashboard/" class="btn btn-outline-primary w-100 mt-3"><i class="fas fa-arrow-left me-2"></i>Back to Dashboard</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

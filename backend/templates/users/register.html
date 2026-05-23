@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+{% block title %}Register — OnlineBazar
+<script>
+(function () {
+  const pwd = document.getElementById('password');
+  const cpwd = document.getElementById('confirm_password');
+  const msg = document.getElementById('pwd-mismatch-msg');
+
+  function checkMatch() {
+    if (cpwd.value.length === 0) { msg.style.display = 'none'; cpwd.classList.remove('is-invalid','is-valid'); return; }
+    if (pwd.value !== cpwd.value) {
+      msg.style.display = 'block';
+      cpwd.classList.add('is-invalid'); cpwd.classList.remove('is-valid');
+    } else {
+      msg.style.display = 'none';
+      cpwd.classList.remove('is-invalid'); cpwd.classList.add('is-valid');
+    }
+  }
+  cpwd.addEventListener('input', checkMatch);
+  pwd.addEventListener('input', checkMatch);
+
+  // Prevent form submit if passwords mismatch
+  cpwd.closest('form').addEventListener('submit', function(e) {
+    if (pwd.value !== cpwd.value) {
+      e.preventDefault();
+      msg.style.display = 'block';
+      cpwd.classList.add('is-invalid');
+      cpwd.focus();
+      // Show a toast/alert popup
+      showMismatchAlert();
+    }
+  });
+
+  function showMismatchAlert() {
+    let existing = document.getElementById('pwd-toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.id = 'pwd-toast';
+    toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;background:#dc3545;color:#fff;padding:14px 28px;border-radius:8px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,0.25);font-size:1rem;';
+    toast.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Passwords do not match! Please re-enter.';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+  }
+})();
+</script>
+{% endblock %}
+{% block content %}
+<div class="container mt-4 mb-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+
+      <!-- Role Picker -->
+      <div class="d-flex gap-2 justify-content-center mb-4">
+        <a href="/user/register/" class="btn btn-primary fw-bold px-4">
+          <i class="fas fa-user me-2"></i>Buyer
+        </a>
+        <a href="/seller/register/" class="btn btn-outline-success fw-bold px-4">
+          <i class="fas fa-store me-2"></i>Seller
+        </a>
+      </div>
+
+      <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white text-center py-3">
+          <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i>Create Buyer Account</h4>
+          <small>OnlineBazar — MCA Project | Ankit Sharma (34) & Niraj Kumar (8)</small>
+        </div>
+        <div class="card-body p-4">
+          <form method="POST">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Full Name *</label>
+                <input type="text" name="name" class="form-control" value="{{ data.name|default:'' }}" required/>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Gender *</label>
+                <select name="gender" class="form-select" required>
+                  <option value="">Select Gender</option>
+                  {% for g in "Male,Female,Other"|split:"," %}
+                  <option value="{{ g }}" {% if data.gender == g %}selected{% endif %}>{{ g }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Email Address *</label>
+                <input type="email" name="email" class="form-control" value="{{ data.email|default:'' }}" required/>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Phone Number *</label>
+                <input type="text" name="phone_number" class="form-control" maxlength="10" value="{{ data.phone_number|default:'' }}" placeholder="10-digit number" required/>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Password *</label>
+                <input type="password" name="password" id="password" class="form-control" minlength="6" required/>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Confirm Password *</label>
+                <input type="password" name="confirm_password" id="confirm_password" class="form-control" minlength="6" required/>
+              <div id="pwd-mismatch-msg" class="text-danger small mt-1" style="display:none;"><i class="fas fa-exclamation-circle me-1"></i>Passwords do not match!</div>
+              </div>
+              <!-- Address Section -->
+              <div class="col-12"><hr/><h5 class="fw-bold text-primary"><i class="fas fa-map-marker-alt me-2"></i>Address Details</h5></div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">House No. *</label>
+                <input type="text" name="house_no" class="form-control" value="{{ data.house_no|default:'' }}" required/>
+              </div>
+              <div class="col-md-8">
+                <label class="form-label fw-semibold">Address Line *</label>
+                <input type="text" name="address_line" class="form-control" value="{{ data.address_line|default:'' }}" placeholder="Street, Colony, Area" required/>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Nearby Landmark</label>
+                <input type="text" name="nearby_landmark" class="form-control" value="{{ data.nearby_landmark|default:'' }}" placeholder="Optional"/>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">District *</label>
+                <input type="text" name="district" id="district" class="form-control" value="{{ data.district|default:'' }}" required placeholder="Auto-filled from pincode"/>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">State *</label>
+                <input type="text" name="state" id="state" class="form-control" value="{{ data.state|default:'' }}" required placeholder="Auto-filled from pincode"/>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Pincode *</label>
+                <input type="text" name="pincode" id="pincode" class="form-control" maxlength="6" value="{{ data.pincode|default:'' }}" placeholder="6-digit pincode" required autocomplete="off"/>
+                <div id="pincode-info" class="text-success small mt-1" style="display:none;">
+                  <i class="fas fa-map-marker-alt me-1"></i><span id="pincode-area"></span>
+                </div>
+                <div id="pincode-error" class="text-danger small mt-1" style="display:none;">
+                  <i class="fas fa-exclamation-circle me-1"></i>Pincode not found. Please check.
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 fw-bold btn-lg mt-4">Create Account</button>
+          </form>
+          <p class="text-center mt-3">Already have an account? <a href="/user/login/" class="fw-bold">Login</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const pwd = document.getElementById('password');
+  const cpwd = document.getElementById('confirm_password');
+  const msg = document.getElementById('pwd-mismatch-msg');
+
+  function checkMatch() {
+    if (cpwd.value.length === 0) { msg.style.display = 'none'; cpwd.classList.remove('is-invalid','is-valid'); return; }
+    if (pwd.value !== cpwd.value) {
+      msg.style.display = 'block';
+      cpwd.classList.add('is-invalid'); cpwd.classList.remove('is-valid');
+    } else {
+      msg.style.display = 'none';
+      cpwd.classList.remove('is-invalid'); cpwd.classList.add('is-valid');
+    }
+  }
+  cpwd.addEventListener('input', checkMatch);
+  pwd.addEventListener('input', checkMatch);
+
+  // Prevent form submit if passwords mismatch
+  cpwd.closest('form').addEventListener('submit', function(e) {
+    if (pwd.value !== cpwd.value) {
+      e.preventDefault();
+      msg.style.display = 'block';
+      cpwd.classList.add('is-invalid');
+      cpwd.focus();
+      // Show a toast/alert popup
+      showMismatchAlert();
+    }
+  });
+
+  function showMismatchAlert() {
+    let existing = document.getElementById('pwd-toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.id = 'pwd-toast';
+    toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;background:#dc3545;color:#fff;padding:14px 28px;border-radius:8px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,0.25);font-size:1rem;';
+    toast.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Passwords do not match! Please re-enter.';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+  }
+})();
+</script>
+
+<script>
+/* ── Pincode Auto-fill ── */
+(function () {
+  const pincodeInput = document.getElementById('pincode');
+  const districtInput = document.getElementById('district');
+  const stateInput    = document.getElementById('state');
+  const infoBox  = document.getElementById('pincode-info');
+  const areaSpan = document.getElementById('pincode-area');
+  const errorBox = document.getElementById('pincode-error');
+  let timer;
+
+  pincodeInput.addEventListener('input', function () {
+    const val = this.value.trim();
+    infoBox.style.display  = 'none';
+    errorBox.style.display = 'none';
+    clearTimeout(timer);
+    if (val.length === 6 && /^\d{6}$/.test(val)) {
+      timer = setTimeout(() => lookup(val), 600);
+    }
+  });
+
+  function lookup(pin) {
+    fetch('https://api.postalpincode.in/pincode/' + pin)
+      .then(r => r.json())
+      .then(data => {
+        if (data && data[0] && data[0].Status === 'Success') {
+          const post = data[0].PostOffice[0];
+          districtInput.value  = post.District;
+          stateInput.value     = post.State;
+          areaSpan.textContent = post.Name + ', ' + post.District + ', ' + post.State;
+          infoBox.style.display  = 'block';
+          errorBox.style.display = 'none';
+        } else {
+          districtInput.value = '';
+          stateInput.value    = '';
+          infoBox.style.display  = 'none';
+          errorBox.style.display = 'block';
+        }
+      })
+      .catch(() => { errorBox.style.display = 'block'; });
+  }
+})();
+</script>
+{% endblock %}

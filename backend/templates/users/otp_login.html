@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% block title %}OTP Login — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-5">
+
+      {% if suspended %}
+      <!-- Suspension Card -->
+      <div class="card border-danger shadow-lg">
+        <div class="card-header bg-danger text-white text-center py-3">
+          <i class="fas fa-ban fa-2x mb-2 d-block"></i>
+          <h5 class="mb-0 fw-bold">Account Suspended</h5>
+        </div>
+        <div class="card-body text-center p-4">
+          <p class="text-muted mb-2">Your account has been suspended by the administrator.</p>
+          <div class="alert alert-warning text-start mb-3">
+            <strong><i class="fas fa-info-circle me-2"></i>Reason:</strong><br/>
+            {{ suspension_reason }}
+          </div>
+          <p class="text-muted small">If you believe this is a mistake, please contact us:</p>
+          <a href="mailto:{{ admin_email }}" class="btn btn-outline-danger">
+            <i class="fas fa-envelope me-2"></i>{{ admin_email }}
+          </a>
+          <div class="mt-3">
+            <a href="/user/login/otp/" class="btn btn-outline-secondary btn-sm">← Try another number</a>
+          </div>
+        </div>
+      </div>
+
+      {% else %}
+      <div class="card shadow-lg border-0" style="border-radius:16px;overflow:hidden;">
+
+        <!-- Header -->
+        <div class="card-header text-white text-center py-4" style="background:linear-gradient(135deg,#2874F0,#1a5ecf);">
+          <div style="font-size:48px;">📱</div>
+          <h4 class="fw-bold mb-1">Login with OTP</h4>
+          <p class="mb-0 opacity-75 small">No password needed — just your mobile number</p>
+        </div>
+
+        <div class="card-body p-4">
+
+          {% for msg in messages %}
+          <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
+            {{ msg }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+          {% endfor %}
+
+          <!-- STEP 1: Enter Phone -->
+          {% if step == 'phone' %}
+          <form method="POST" action="/user/login/otp/">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold">📱 Mobile Number</label>
+              <div class="input-group input-group-lg">
+                <span class="input-group-text bg-primary text-white fw-bold">+91</span>
+                <input type="tel" name="phone_number" class="form-control" maxlength="10"
+                       placeholder="Enter 10-digit number" required autofocus
+                       pattern="\d{10}" title="Enter 10-digit mobile number">
+              </div>
+              <small class="text-muted">We'll send a 6-digit OTP to this number</small>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 btn-lg fw-bold mb-3">
+              <i class="fas fa-paper-plane me-2"></i>Send OTP
+            </button>
+          </form>
+
+          <div class="text-center">
+            <hr>
+            <small class="text-muted">Or login with password</small>
+            <div class="mt-2 d-flex flex-column gap-2">
+              <a href="/user/login/" class="btn btn-outline-primary">🔐 Password Login</a>
+              <a href="/user/forgot-password/" class="btn btn-outline-secondary">🔑 Forgot Password?</a>
+              <a href="/user/register/" class="btn btn-outline-success">✨ Register</a>
+            </div>
+          </div>
+
+          <!-- STEP 2: Verify OTP -->
+          {% elif step == 'verify' %}
+          <div class="text-center mb-3">
+            <div class="badge bg-success px-3 py-2 fs-6 mb-2">OTP Sent! ✅</div>
+            <p class="text-muted small">OTP sent to <strong>{{ phone|slice:":4" }}XXXXXX</strong></p>
+            {% if demo_otp %}
+            <div class="alert alert-info py-2">
+              <small>🔧 <strong>Demo Mode OTP:</strong> <span class="fw-bold fs-5 text-primary">{{ demo_otp }}</span></small>
+              <br><small class="text-muted">(In production this would be sent via SMS)</small>
+            </div>
+            {% endif %}
+          </div>
+
+          <form method="POST" action="/user/login/otp/verify/">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold">🔢 Enter 6-Digit OTP</label>
+              <input type="text" name="otp" class="form-control form-control-lg text-center fw-bold"
+                     maxlength="6" pattern="\d{6}" placeholder="• • • • • •"
+                     style="letter-spacing:12px;font-size:24px;" required autofocus>
+              <div id="timer" class="text-muted small text-end mt-1">Expires in <span id="countdown">10:00</span></div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 btn-lg fw-bold mb-2">
+              <i class="fas fa-check-circle me-2"></i>Verify OTP
+            </button>
+          </form>
+
+          <div class="text-center">
+            <button class="btn btn-link text-muted small" id="resend-btn" onclick="resendOTP()" disabled>
+              Resend OTP (wait <span id="resend-timer">30</span>s)
+            </button>
+          </div>
+
+          <script>
+          let seconds = 600;
+          const timer = setInterval(() => {
+            seconds--;
+            const m = Math.floor(seconds/60), s = seconds%60;
+            document.getElementById('countdown').textContent = m+':'+(s<10?'0':'')+s;
+            if (seconds <= 0) { clearInterval(timer); document.getElementById('countdown').textContent = 'Expired'; }
+          }, 1000);
+
+          let resendSec = 30;
+          const resendTimer = setInterval(() => {
+            resendSec--;
+            document.getElementById('resend-timer').textContent = resendSec;
+            if (resendSec <= 0) {
+              clearInterval(resendTimer);
+              const btn = document.getElementById('resend-btn');
+              btn.disabled = false;
+              btn.innerHTML = '🔄 Resend OTP';
+            }
+          }, 1000);
+
+          async function resendOTP() {
+            const btn = document.getElementById('resend-btn');
+            btn.disabled = true;
+            btn.innerHTML = 'Sending...';
+            const res = await fetch('/user/login/otp/resend/');
+            const data = await res.json();
+            if (data.success) {
+              btn.innerHTML = '✅ Sent!';
+              if (data.demo_otp) {
+                document.querySelector('.alert-info .fw-bold') &&
+                (document.querySelector('.alert-info .fw-bold').textContent = data.demo_otp);
+              }
+            }
+          }
+          </script>
+          {% endif %}
+
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}

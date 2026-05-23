@@ -1,0 +1,30 @@
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('login/', views.superadmin_login, name='superadmin_login'),
+    path('logout/', views.superadmin_logout, name='superadmin_logout'),
+    path('dashboard/', views.superadmin_dashboard, name='superadmin_dashboard'),
+    path('users/', views.manage_users, name='manage_users'),
+    path('users/toggle/<uuid:user_id>/', views.toggle_user, name='toggle_user'),
+    path('sellers/', views.manage_sellers, name='manage_sellers'),
+    path('sellers/blacklist/<uuid:seller_id>/', views.blacklist_seller, name='blacklist_seller'),
+    path('sellers/whitelist/<uuid:seller_id>/', views.whitelist_seller, name='whitelist_seller'),
+    path('products/', views.manage_products, name='manage_products'),
+    path('discounts/', views.manage_discounts, name='manage_discounts'),
+    path('discounts/add/', views.add_discount, name='add_discount'),
+    path('discounts/toggle/<uuid:discount_id>/', views.toggle_discount, name='toggle_discount'),
+    path('discounts/delete/<uuid:discount_id>/', views.delete_discount, name='delete_discount'),
+    path('analytics/', views.analytics, name='analytics'),
+    path('demand-forecast/', views.demand_forecast, name='demand_forecast'),
+    path('sales-report/pdf/', views.sales_report_pdf, name='sales_report_pdf'),
+    path('fake-reviews/', views.fake_reviews, name='fake_reviews'),
+    path('fake-reviews/delete/<int:review_id>/', views.delete_review, name='delete_review'),
+    path('dynamic-pricing/', views.dynamic_pricing, name='dynamic_pricing'),
+    path('chatbot/', views.chatbot_management, name='chatbot_management'),
+    path('returns/', views.return_requests, name='return_requests'),
+    path('chatbot/answer/', views.chatbot_answer, name='chatbot_answer'),
+    path('chatbot/knowledge/add/', views.chatbot_add_knowledge, name='chatbot_add_knowledge'),
+    path('chatbot/knowledge/delete/<uuid:kb_id>/', views.chatbot_delete_knowledge, name='chatbot_delete_knowledge'),
+    path('seller-activity/', views.seller_activity_log, name='seller_activity_log'),
+]

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Analytics — OnlineBazar{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold"><i class="fas fa-chart-bar text-dark me-2"></i>ML Analytics & Insights</h4>
+    <a href="/superadmin/dashboard/" class="btn btn-outline-secondary">← Dashboard</a>
+  </div>
+  <div class="row g-4">
+    <!-- Seasonal Prediction -->
+    <div class="col-md-6">
+      <div class="card shadow border-warning">
+        <div class="card-header bg-warning text-dark fw-bold"><i class="fas fa-magic me-2"></i>🤖 Seasonal Category Forecast (ML)</div>
+        <div class="card-body">
+          <p class="text-muted small">Predictions generated using Random Forest Classifier trained on historical order data.</p>
+          {% for pred in predictions %}
+          <div class="card mb-3 border-0 bg-light">
+            <div class="card-body py-2">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <h6 class="fw-bold mb-0">{{ pred.month }}</h6>
+                <div>
+                  <span class="badge bg-info">{{ pred.season }}</span>
+                  {% if pred.festival %}<span class="badge bg-warning text-dark ms-1">🎉 {{ pred.festival }}</span>{% endif %}
+                </div>
+              </div>
+              <p class="mb-1 text-muted small">Predicted top-selling categories:</p>
+              <div class="d-flex gap-2 flex-wrap">
+                {% for cat in pred.categories %}
+                <div class="text-center">
+                  <span class="badge bg-primary fs-6 px-3">{{ cat }}</span>
+                  <div class="text-muted" style="font-size:10px;">Rank #{{ forloop.counter }}</div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <!-- Regional Demand -->
+    <div class="col-md-6">
+      <div class="card shadow">
+        <div class="card-header bg-info text-white fw-bold"><i class="fas fa-map-marked-alt me-2"></i>Regional Demand Analysis</div>
+        <div class="card-body">
+          <p class="text-muted small">Top state-category combinations by units sold across all sellers.</p>
+          <div class="table-responsive">
+            <table class="table table-sm table-striped">
+              <thead class="table-dark"><tr><th>Rank</th><th>State</th><th>Category</th><th>Units Sold</th></tr></thead>
+              <tbody>
+                {% for r in regional_data %}
+                <tr>
+                  <td><span class="badge bg-warning text-dark">#{{ forloop.counter }}</span></td>
+                  <td><strong>{{ r.state }}</strong></td>
+                  <td><span class="badge bg-secondary">{{ r.category }}</span></td>
+                  <td><span class="fw-bold text-primary">{{ r.quantity }}</span></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-center py-3 text-muted">No data yet. Orders will populate this.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="alert alert-info mt-4">
+    <i class="fas fa-info-circle me-2"></i>
+    <strong>How ML works in this project:</strong>
+    Seasonal predictions use a <strong>Random Forest Classifier</strong> trained on historical order months and categories.
+    Regional analysis uses <strong>Pandas GroupBy aggregation</strong> on user state + product category.
+    Stock alerts use <strong>linear extrapolation</strong> of 30-day average daily sales.
+    Recommendations use <strong>TF-IDF + Cosine Similarity</strong> on user search history.
+  </div>
+</div>
+{% endblock %}
